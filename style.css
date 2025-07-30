@@ -1,0 +1,166 @@
+/* Import a futuristic font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@300;400&display=swap');
+
+:root {
+    --primary-glow: #00A8E8;
+    --primary-glow-transparent: rgba(0, 168, 232, 0.7);
+    --card-bg: rgba(20, 40, 70, 0.35);
+    --card-border: rgba(0, 168, 232, 0.2);
+    --card-hover-border: var(--primary-glow);
+    --text-color: #E6F1FF;
+    --header-font: 'Orbitron', sans-serif;
+    --body-font: 'Poppins', sans-serif;
+}
+
+body {
+    font-family: var(--body-font);
+}
+
+/* --- THE ALIGNMENT FIX: More robust Flexbox rules --- */
+.header-flex-container {
+    display: flex;
+    align-items: center; /* This is the key property for vertical centering */
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem 0; /* Reduced vertical padding */
+    margin-bottom: 2rem;
+}
+
+.model-viewer {
+    width: 150px;
+    height: 150px;
+    background-color: transparent;
+    --poster-color: transparent;
+}
+
+.title-block {
+    text-align: center;
+    margin: 0; /* Reset any default margins */
+}
+
+.main-title {
+    font-family: var(--header-font);
+    font-size: 5rem;
+    color: #FFFFFF;
+    text-shadow: 0 0 10px var(--primary-glow-transparent), 0 0 20px var(--primary-glow-transparent);
+    animation: glow 2.5s ease-in-out infinite alternate;
+    margin: 0;
+}
+
+@keyframes glow {
+    from { text-shadow: 0 0 10px var(--primary-glow-transparent); }
+    to { text-shadow: 0 0 30px var(--primary-glow-transparent), 0 0 10px #fff; }
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    color: var(--text-color);
+    letter-spacing: 1px;
+}
+
+/* --- Glassmorphism Card (Targeting stForm for robustness) --- */
+[data-testid="stForm"] {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 15px;
+    border: 1px solid var(--card-border);
+    padding: 2rem 2.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease-in-out;
+}
+
+[data-testid="stForm"]:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: var(--card-hover-border);
+    box-shadow: 0 10px 30px rgba(0, 168, 232, 0.3);
+}
+
+/* Custom class for the static text card */
+.glass-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 15px;
+    border: 1px solid var(--card-border);
+    padding: 2rem 2.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease-in-out;
+}
+
+.glass-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: var(--card-hover-border);
+    box-shadow: 0 10px 30px rgba(0, 168, 232, 0.3);
+}
+
+
+.section-header, .login-header {
+    font-family: var(--header-font);
+    font-size: 1.8rem;
+    color: var(--text-color);
+    text-align: center;
+    border-bottom: 1px solid var(--primary-glow-transparent);
+    padding-bottom: 15px;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+.text-block {
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 300;
+    text-align: left;
+}
+
+/* News Ticker */
+.news-container {
+    background-color: var(--card-bg);
+    border: 1px solid var(--primary-glow-transparent);
+    padding: 0.8rem;
+    border-radius: 5px;
+    overflow: hidden;
+    white-space: nowrap;
+    margin-top: 2rem;
+    backdrop-filter: blur(5px);
+}
+
+.news-ticker {
+    display: inline-block;
+    padding-left: 100%;
+    animation: marquee 30s linear infinite;
+}
+
+.news-ticker p {
+    margin: 0;
+    color: #FFFFFF;
+    font-size: 1.1rem;
+}
+
+@keyframes marquee {
+    0%   { transform: translate(0, 0); }
+    100% { transform: translate(-100%, 0); }
+}
+
+/* Input and Button Styling */
+[data-testid="stTextInput"] input {
+    color: var(--text-color);
+    background-color: rgba(10, 25, 47, 0.7);
+    border: 1px solid var(--card-border);
+}
+
+[data-testid="stButton"] button {
+    background-color: transparent;
+    border: 1px solid var(--primary-glow);
+    color: var(--primary-glow);
+    transition: all 0.3s ease-in-out;
+    font-weight: bold;
+}
+
+[data-testid="stButton"] button:hover {
+    background-color: var(--primary-glow-transparent);
+    color: white;
+    box-shadow: 0 0 15px var(--primary-glow-transparent);
+}
