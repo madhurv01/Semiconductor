@@ -1,8 +1,8 @@
 import streamlit as st
 import base64
 import os
-import streamlit.components.v1 as components
 from supabase import create_client, Client
+import streamlit.components.v1 as components
 import bcrypt
 
 # --- Page Configuration ---
@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- Define a list of authorized government users ---
+# --- Define Authorized Government Users ---
 AUTHORIZED_GOV_USERS = [
     "nishkalavr18@gmail.com",
     "naiksaniya21@gmail.com",
@@ -69,35 +69,30 @@ try:
 except Exception:
     pass 
 
-# --- Login Logic Function ---
-def perform_login(username, password, user_type):
+# --- REFACTORED LOGIN LOGIC ---
+def attempt_login(username, password, user_type):
     if user_type == "gov":
         if username in AUTHORIZED_GOV_USERS and password == "password":
             st.session_state['logged_in'] = True
             st.session_state['user_type'] = "gov"
             st.session_state['username'] = username
             return True
-        else:
-            # Explicitly return False if gov login fails
-            st.error("Invalid government credentials.")
-            return False
+        return False
+    
     elif user_type == "user":
         if not (username and password):
-             st.warning("Please enter both username and password.")
-             return False
+            st.warning("Please enter both username and password.")
+            return False
         if not supabase:
-            st.error("Database is not connected. Cannot log in.")
+            st.error("Database connection failed. Cannot log in.")
             return False
         
         res = supabase.table('user_logins').select('username, hashed_password').eq('username', username).execute()
-        if res.data:
-            user_data = res.data[0]
-            if verify_password(password, user_data['hashed_password']):
-                st.session_state['logged_in'] = True
-                st.session_state['user_type'] = "user"
-                st.session_state['username'] = username
-                return True
-        st.error("Incorrect username or password.")
+        if res.data and verify_password(password, res.data[0]['hashed_password']):
+            st.session_state['logged_in'] = True
+            st.session_state['user_type'] = "user"
+            st.session_state['username'] = username
+            return True
         return False
 
 # --- Main Page Rendering ---
@@ -129,9 +124,7 @@ if st.session_state.get('logged_in'):
                             else:
                                 hashed_pass = hash_password(new_password)
                                 supabase.table('user_logins').insert({
-                                    "username": new_username,
-                                    "user_type": "user",
-                                    "hashed_password": hashed_pass
+                                    "username": new_username, "user_type": "user", "hashed_password": hashed_pass
                                 }).execute()
                                 st.success(f"User '{new_username}' created successfully!")
                         else:
@@ -175,27 +168,35 @@ else:
     
     col1, col2 = st.columns(2, gap="large")
     with col1:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("gov_login_form"):
             st.markdown('<p class="login-header">Government Login</p>', unsafe_allow_html=True)
             gov_user = st.text_input("Username", key="gov_user")
             gov_pass = st.text_input("Password", type="password", key="gov_pass")
             if st.form_submit_button("Login", use_container_width=True):
-                if perform_login(gov_user, gov_pass, "gov"):
+                if attempt_login(gov_user, gov_pass, "gov"):
                     st.rerun()
+                else:
+                    st.error("Invalid government credentials.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("user_login_form"):
             st.markdown('<p class="login-header">User Login</p>', unsafe_allow_html=True)
             user_login_user = st.text_input("Username", key="user_login_user")
             user_login_pass = st.text_input("Password", type="password", key="user_login_pass")
             if st.form_submit_button("Login", use_container_width=True):
-                if perform_login(user_login_user, user_login_pass, "user"):
+                if not attempt_login(user_login_user, user_login_pass, "user"):
+                    st.error("Incorrect username or password.")
+                else:
                     st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
         <div class="news-container">
             <div class="news-ticker">
-                <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong> Tata Group and CG Power–Renesas to boost manufacturing capacity. +++ <strong>Major Leap into Manufacturing: 3 Plants, Rs 1.26 Lakh Crore Investment Gets Nod.</strong> A significant step toward becoming self-reliant. +++ <strong>Maharashtra gets a boost with new Rs 63,647 crore plant.</strong> +++</p>
+                <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong>...</p>
             </div>
         </div>
-    """, unsafe_allow_html=True)```
+    """, unsafe_allow_html=True)
