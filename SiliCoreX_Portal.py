@@ -73,13 +73,20 @@ else:
 
     try:
         header_cols = st.columns([1, 2, 1])
-        # ... (Header code remains the same)
         with header_cols[0]:
-            # ... (3D model code)
+            with open("images/chip_left.glb", "rb") as f:
+                left_model_data = f.read()
+            left_model_b64 = base64.b64encode(left_model_data).decode()
+            left_model_src = f"data:model/gltf-binary;base64,{left_model_b64}"
+            components.html(f"""<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script><model-viewer class="model-viewer" src="{left_model_src}" alt="A 3D model" auto-rotate camera-controls shadow-intensity="1"></model-viewer>""", height=160)
         with header_cols[1]:
             st.markdown("""<div class="title-block"><h1 class="main-title">SiliCoreX</h1><p class="subtitle">AI-driven hybrid model for Semiconductor Analytics</p></div>""", unsafe_allow_html=True)
         with header_cols[2]:
-            # ... (3D model code)
+            with open("images/chip_right.glb", "rb") as f:
+                right_model_data = f.read()
+            right_model_b64 = base64.b64encode(right_model_data).decode()
+            right_model_src = f"data:model/gltf-binary;base64,{right_model_b64}"
+            components.html(f"""<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script><model-viewer class="model-viewer" src="{right_model_src}" alt="A 3D model" auto-rotate camera-controls shadow-intensity="1"></model-viewer>""", height=160)
     except FileNotFoundError:
         st.error("Header 3D model files not found.")
 
@@ -97,7 +104,9 @@ else:
     st.markdown("""
     <div class="glass-card">
         <p class="section-header">Background (Problem)</p>
-        <div class="text-block">...</div>
+        <div class="text-block">
+            The semiconductor industry faces challenges in site selection, resource management, and profitability forecasting due to complex dependencies on economic, logistical, and environmental factors. With rising demand for chips and constrained resources like pure water and raw materials, there is a critical need for data-driven tools to optimize manufacturing unit establishment and operations. The Indian government has launched ambitious initiatives under the <strong>India Semiconductor Mission (ISM)</strong> to build a self-reliant ecosystem.
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -122,8 +131,7 @@ else:
         
         with login_tab:
             st.markdown('<p class="login-header">User Login</p>', unsafe_allow_html=True)
-            user_login_form = st.form("user_login_form")
-            with user_login_form:
+            with st.form("user_login_form"):
                 user_login_user = st.text_input("Username", key="user_login_user")
                 user_login_pass = st.text_input("Password", type="password", key="user_login_pass")
                 if st.form_submit_button("Login", use_container_width=True):
@@ -144,11 +152,16 @@ else:
                             st.error("Incorrect username or password.")
                     else:
                         st.warning("Please enter username and password.")
+                
+                st.markdown("<p style='text-align: center; color: white;'>or</p>", unsafe_allow_html=True)
+                social_cols = st.columns(2)
+                social_cols[0].button("Login with Google", use_container_width=True, key="google_login")
+                social_cols[1].button("Login with GitHub", use_container_width=True, key="github_login")
+
 
         with register_tab:
             st.markdown('<p class="login-header">Register New User</p>', unsafe_allow_html=True)
-            user_reg_form = st.form("user_reg_form")
-            with user_reg_form:
+            with st.form("user_reg_form"):
                 user_reg_user = st.text_input("Username", key="user_reg_user")
                 user_reg_pass = st.text_input("Password", type="password", key="user_reg_pass")
                 if st.form_submit_button("Register", use_container_width=True):
@@ -170,33 +183,10 @@ else:
                         st.warning("Please enter a username and password.")
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # ... (News Ticker code remains the same) ...```
-
----
-
-### **Phase 2: Adding Social Logins (Google/GitHub)**
-
-Implementing full OAuth (the technology behind social logins) from scratch in Streamlit is extremely complex and can introduce security risks if not done perfectly.
-
-The industry-standard and most secure way to do this is to use a **dedicated authentication service**. A great free option is **Auth0**.
-
-#### **How it Would Work (High-Level Architecture):**
-
-1.  **You would create a free account at [Auth0](https://auth0.com/).**
-2.  In Auth0's dashboard, you would enable "Social Connections" for Google and GitHub. This is just a matter of clicking a few buttons.
-3.  You would then replace your current login forms with a single "Login" button.
-4.  When a user clicks this button, your Streamlit app redirects them to your special Auth0 login page.
-5.  The Auth0 page shows the "Login with Google" and "Login with GitHub" buttons automatically.
-6.  After the user authenticates, Auth0 securely redirects them back to your Streamlit app, now with a logged-in status.
-
-#### **Adding the Buttons to Your UI**
-
-To show you how it would look, you can add these buttons to your `SiliCoreX_Portal.py` file inside the `user_login_form`. This code won't *work* without the full Auth0 integration, but it will display the buttons correctly.
-
-**In `SiliCoreX_Portal.py`, inside the `with user_login_form:` block, add:**
-```python
-# ... inside the User Login form ...
-st.markdown("<p style='text-align: center; color: white;'>or</p>", unsafe_allow_html=True)
-cols = st.columns(2)
-cols[0].button("Login with Google", use_container_width=True)
-cols[1].button("Login with GitHub", use_container_width=True)
+    st.markdown("""
+        <div class="news-container">
+            <div class="news-ticker">
+                <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong> Tata Group and CG Power–Renesas to boost manufacturing capacity. +++ <strong>Major Leap into Manufacturing: 3 Plants, Rs 1.26 Lakh Crore Investment Gets Nod.</strong> A significant step toward becoming self-reliant. +++ <strong>Maharashtra gets a boost with new Rs 63,647 crore plant.</strong> +++</p>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
