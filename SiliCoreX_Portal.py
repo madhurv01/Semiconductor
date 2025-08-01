@@ -1,8 +1,9 @@
 import streamlit as st
 import base64
 import os
-from supabase import create_client, Client
 import streamlit.components.v1 as components
+from supabase import create_client, Client
+import bcrypt
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -11,6 +12,15 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# --- Define a list of authorized government users ---
+AUTHORIZED_GOV_USERS = [
+    "nishkalavr18@gmail.com",
+    "naiksaniya21@gmail.com",
+    "lpniranjan555@gmail.com",
+    "sireesha@vvce.ac.in",
+    "madhurvwork@gmail.com"
+]
 
 # --- Function to load and apply CSS ---
 def load_css(file_name):
@@ -34,7 +44,14 @@ def set_page_background(png_file):
         '''
         st.markdown(page_bg_img, unsafe_allow_html=True)
     except FileNotFoundError:
-        st.warning(f"Background image not found at '{png_file}'. Please ensure it is in the 'images' folder.")
+        st.warning(f"Background image not found at '{png_file}'.")
+
+# --- Hashing Utilities ---
+def hash_password(password):
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password, hashed_password):
+    return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 # --- Login State Management ---
 if 'logged_in' not in st.session_state:
@@ -47,44 +64,43 @@ if 'username' not in st.session_state:
 # --- Supabase Initialization ---
 supabase = None
 try:
-    # Check for secrets and create the client
     if "supabase_url" in st.secrets and "supabase_key" in st.secrets:
         supabase = create_client(st.secrets["supabase_url"], st.secrets["supabase_key"])
 except Exception:
-    # Fail silently, the warning will be shown on the page
-    pass
+    pass 
 
 # --- Login Logic Function ---
 def perform_login(username, password, user_type):
-    login_successful = False
     if user_type == "gov":
-        if username == "madhurvwork@gmail.com" and password == "password":
-            login_successful = True
+        if username in AUTHORIZED_GOV_USERS and password == "password":
+            st.session_state['logged_in'] = True
+            st.session_state['user_type'] = "gov"
+            st.session_state['username'] = username
+            return True
+        else:
+            # Explicitly return False if gov login fails
+            st.error("Invalid government credentials.")
+            return False
     elif user_type == "user":
-        if username: # User only needs a username to log in
-            login_successful = True
-
-    if login_successful:
-        st.session_state['logged_in'] = True
-        st.session_state['user_type'] = user_type
-        st.session_state['username'] = username
+        if not (username and password):
+             st.warning("Please enter both username and password.")
+             return False
+        if not supabase:
+            st.error("Database is not connected. Cannot log in.")
+            return False
         
-        # Log the successful login to the database
-        if supabase:
-            try:
-                supabase.table('user_logins').insert({
-                    "username": username,
-                    "user_type": user_type
-                }).execute()
-            except Exception:
-                # If DB write fails, don't block the login
-                pass 
-        return True
-    else:
+        res = supabase.table('user_logins').select('username, hashed_password').eq('username', username).execute()
+        if res.data:
+            user_data = res.data[0]
+            if verify_password(password, user_data['hashed_password']):
+                st.session_state['logged_in'] = True
+                st.session_state['user_type'] = "user"
+                st.session_state['username'] = username
+                return True
+        st.error("Incorrect username or password.")
         return False
 
 # --- Main Page Rendering ---
-
 if st.session_state.get('logged_in'):
     st.sidebar.success(f"Welcome, {st.session_state['username']}!")
     if st.sidebar.button("Logout"):
@@ -92,10 +108,34 @@ if st.session_state.get('logged_in'):
         st.session_state['user_type'] = None
         st.session_state['username'] = None
         st.rerun()
+
     st.title("SiliCoreX Portal Dashboard")
     st.markdown("### Please select a tool from the sidebar to continue.")
+    
     if st.session_state.get('user_type') == 'gov':
-        st.info("As a government user, you have access to the **Site Analysis Tool**.")
+        st.info("As a government user, you have access to the **Site Analysis Tool** and the **Profit & Loss Forecasting Tool**.")
+        with st.expander("🔑 Admin: Create New User"):
+            if not supabase:
+                st.error("Database connection failed. Cannot create user.")
+            else:
+                with st.form("create_user_form"):
+                    new_username = st.text_input("New User's Username")
+                    new_password = st.text_input("New User's Password", type="password")
+                    if st.form_submit_button("Create User"):
+                        if new_username and new_password:
+                            res = supabase.table('user_logins').select('username').eq('username', new_username).execute()
+                            if res.data:
+                                st.error("This username already exists.")
+                            else:
+                                hashed_pass = hash_password(new_password)
+                                supabase.table('user_logins').insert({
+                                    "username": new_username,
+                                    "user_type": "user",
+                                    "hashed_password": hashed_pass
+                                }).execute()
+                                st.success(f"User '{new_username}' created successfully!")
+                        else:
+                            st.warning("Please provide both a username and a password.")
     else:
         st.info("You can view information about the **India Semiconductor Mission**.")
 else:
@@ -142,19 +182,15 @@ else:
             if st.form_submit_button("Login", use_container_width=True):
                 if perform_login(gov_user, gov_pass, "gov"):
                     st.rerun()
-                else:
-                    st.error("Invalid government credentials.")
 
     with col2:
         with st.form("user_login_form"):
             st.markdown('<p class="login-header">User Login</p>', unsafe_allow_html=True)
-            user_user = st.text_input("Username", key="user_user")
-            user_pass = st.text_input("Password (optional)", type="password", key="user_pass")
+            user_login_user = st.text_input("Username", key="user_login_user")
+            user_login_pass = st.text_input("Password", type="password", key="user_login_pass")
             if st.form_submit_button("Login", use_container_width=True):
-                if perform_login(user_user, user_pass, "user"):
+                if perform_login(user_login_user, user_login_pass, "user"):
                     st.rerun()
-                else:
-                    st.warning("Please enter a username.")
 
     st.markdown("""
         <div class="news-container">
@@ -162,4 +198,4 @@ else:
                 <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong> Tata Group and CG Power–Renesas to boost manufacturing capacity. +++ <strong>Major Leap into Manufacturing: 3 Plants, Rs 1.26 Lakh Crore Investment Gets Nod.</strong> A significant step toward becoming self-reliant. +++ <strong>Maharashtra gets a boost with new Rs 63,647 crore plant.</strong> +++</p>
             </div>
         </div>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)```
