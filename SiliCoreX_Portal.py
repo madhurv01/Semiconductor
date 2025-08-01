@@ -1,7 +1,6 @@
 import streamlit as st
 import base64
 import os
-from supabase import create_client, Client
 import streamlit.components.v1 as components
 
 # --- Page Configuration ---
@@ -45,55 +44,50 @@ if 'username' not in st.session_state:
     st.session_state['username'] = None
 
 # --- Login Logic Function ---
-def perform_login(username, password, user_type, supabase_client):
-    login_successful = False
+def perform_login(username, password, user_type):
     if user_type == "gov":
         if username == "madhurvwork@gmail.com" and password == "password":
-            login_successful = True
+            st.session_state['logged_in'] = True
+            st.session_state['user_type'] = "gov"
+            st.session_state['username'] = username
+        else:
+            return False
     elif user_type == "user":
-        if username:
-            login_successful = True
-
-    if login_successful:
+        if not username:
+            return False
         st.session_state['logged_in'] = True
-        st.session_state['user_type'] = user_type
+        st.session_state['user_type'] = "user"
         st.session_state['username'] = username
-        
-        if supabase_client:
-            try:
-                supabase_client.table('user_logins').insert({
-                    "username": username,
-                    "user_type": user_type
-                }).execute()
-            except Exception as e:
-                st.error(f"Database Error: Could not log user. Details: {e}")
-        return True
-    else:
-        return False
+    return True
 
 # --- Main Page Rendering ---
 
+# If user is logged in, show the default themed pages
 if st.session_state.get('logged_in'):
     st.sidebar.success(f"Welcome, {st.session_state['username']}!")
+    
     if st.sidebar.button("Logout"):
         st.session_state['logged_in'] = False
         st.session_state['user_type'] = None
         st.session_state['username'] = None
         st.rerun()
+
     st.title("SiliCoreX Portal Dashboard")
     st.markdown("### Please select a tool from the sidebar to continue.")
+    
     if st.session_state.get('user_type') == 'gov':
         st.info("As a government user, you have access to the **Site Analysis Tool**.")
     else:
         st.info("You can view information about the **India Semiconductor Mission**.")
 
+# If user is NOT logged in, show the styled landing/login page
 else:
     load_css("style.css")
     set_page_background('images/background.png')
 
-    # --- THE DEFINITIVE FIX: Use st.columns and the correct component ---
+    # --- Use Streamlit Columns for Robust Alignment ---
     header_cols = st.columns([1, 2, 1])
-    
+
     with header_cols[0]:
         try:
             with open("images/chip_left.glb", "rb") as f:
@@ -105,7 +99,7 @@ else:
                 <model-viewer class="model-viewer" src="{left_model_src}" alt="A 3D model of a chip" auto-rotate camera-controls shadow-intensity="1"></model-viewer>
             """, height=160)
         except FileNotFoundError:
-            st.error("chip_left.glb not found in images folder.")
+            st.error("chip_left.glb not found.")
 
     with header_cols[1]:
         st.markdown("""
@@ -126,14 +120,8 @@ else:
                 <model-viewer class="model-viewer" src="{right_model_src}" alt="A 3D model of a chip" auto-rotate camera-controls shadow-intensity="1"></model-viewer>
             """, height=160)
         except FileNotFoundError:
-            st.error("chip_right.glb not found in images folder.")
-            
-    # --- Supabase Initialization (after visual rendering) ---
-    supabase = None
-    try:
-        supabase = create_client(st.secrets.supabase_url, st.secrets.supabase_key)
-    except:
-        st.warning("Supabase credentials not found or invalid. Database logging will be disabled.")
+            st.error("chip_right.glb not found.")
+
 
     # --- Static content card ---
     st.markdown("""
@@ -152,8 +140,9 @@ else:
             gov_user = st.text_input("Username", key="gov_user")
             gov_pass = st.text_input("Password", type="password", key="gov_pass")
             gov_submitted = st.form_submit_button("Login", use_container_width=True)
+
             if gov_submitted:
-                if perform_login(gov_user, gov_pass, "gov", supabase):
+                if perform_login(gov_user, gov_pass, "gov"):
                     st.rerun()
                 else:
                     st.error("Invalid username or password")
@@ -164,8 +153,9 @@ else:
             user_user = st.text_input("Username", key="user_user")
             user_pass = st.text_input("Password (optional)", type="password", key="user_pass")
             user_submitted = st.form_submit_button("Login", use_container_width=True)
+            
             if user_submitted:
-                if perform_login(user_user, user_pass, "user", supabase):
+                if perform_login(user_user, user_pass, "user"):
                     st.rerun()
                 else:
                     st.warning("Please enter a username.")
