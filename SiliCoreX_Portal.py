@@ -52,8 +52,18 @@ if 'user_type' not in st.session_state:
 if 'username' not in st.session_state:
     st.session_state['username'] = None
 
-# --- Main Page Rendering ---
+# --- Supabase Initialization (Done once at the top) ---
+supabase = None
+try:
+    url = st.secrets.get("supabase_url") or st.secrets.get("SUPABASE_URL")
+    key = st.secrets.get("supabase_key") or st.secrets.get("SUPABASE_KEY")
+    if url and key:
+        supabase = create_client(url, key)
+except Exception:
+    # Warning will be shown on the relevant pages
+    pass
 
+# --- Main Page Rendering ---
 if st.session_state.get('logged_in'):
     st.sidebar.success(f"Welcome, {st.session_state['username']}!")
     if st.sidebar.button("Logout"):
@@ -61,13 +71,42 @@ if st.session_state.get('logged_in'):
         st.session_state['user_type'] = None
         st.session_state['username'] = None
         st.rerun()
+
     st.title("SiliCoreX Portal Dashboard")
     st.markdown("### Please select a tool from the sidebar to continue.")
+    
+    # --- ADMIN-ONLY SECTION TO CREATE NEW USERS ---
     if st.session_state.get('user_type') == 'gov':
         st.info("As a government user, you have access to the **Site Analysis Tool**.")
-    else:
+        with st.expander("🔑 Admin: Create New User"):
+            with st.form("create_user_form"):
+                st.markdown("Create a new standard user who can log in to view the mission page.")
+                new_username = st.text_input("New User's Username")
+                new_password = st.text_input("New User's Password", type="password")
+                if st.form_submit_button("Create User"):
+                    if not supabase:
+                        st.error("Database connection failed. Cannot create user.")
+                    elif new_username and new_password:
+                        # Check if user already exists
+                        res = supabase.table('user_logins').select('username').eq('username', new_username).execute()
+                        if res.data:
+                            st.error("This username already exists.")
+                        else:
+                            # Hash the password and insert the new user
+                            hashed_pass = hash_password(new_password)
+                            supabase.table('user_logins').insert({
+                                "username": new_username,
+                                "user_type": "user",
+                                "hashed_password": hashed_pass
+                            }).execute()
+                            st.success(f"User '{new_username}' created successfully!")
+                    else:
+                        st.warning("Please provide both a username and a password.")
+
+    else: # Regular user is logged in
         st.info("You can view information about the **India Semiconductor Mission**.")
 else:
+    # --- LOGIN PAGE LOGIC ---
     load_css("style.css")
     set_page_background('images/background.png')
 
@@ -90,22 +129,14 @@ else:
     except FileNotFoundError:
         st.error("Header 3D model files not found.")
 
-    supabase = None
-    try:
-        url = st.secrets.get("supabase_url") or st.secrets.get("SUPABASE_URL")
-        key = st.secrets.get("supabase_key") or st.secrets.get("SUPABASE_KEY")
-        if url and key:
-            supabase = create_client(url, key)
-        else:
-            st.warning("Supabase credentials not found. Database features disabled.")
-    except Exception as e:
-        st.warning(f"Could not connect to Supabase. DB features disabled. Error: {e}")
+    if not supabase:
+        st.warning("Supabase credentials not found or invalid. Database features are disabled.")
 
     st.markdown("""
     <div class="glass-card">
         <p class="section-header">Background (Problem)</p>
         <div class="text-block">
-            The semiconductor industry faces challenges in site selection, resource management, and profitability forecasting due to complex dependencies on economic, logistical, and environmental factors. With rising demand for chips and constrained resources like pure water and raw materials, there is a critical need for data-driven tools to optimize manufacturing unit establishment and operations. The Indian government has launched ambitious initiatives under the <strong>India Semiconductor Mission (ISM)</strong> to build a self-reliant ecosystem.
+            The semiconductor industry faces challenges in site selection, resource management, and profitability forecasting due to complex dependencies on economic, logistical, and environmental factors...
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -126,67 +157,33 @@ else:
                     st.error("Invalid government credentials.")
 
     with col2:
-        st.markdown('<div class="glass-card" style="padding: 2rem 2.5rem;">', unsafe_allow_html=True)
-        login_tab, register_tab = st.tabs(["Login", "Register"])
-        
-        with login_tab:
+        with st.form("user_login_form"):
             st.markdown('<p class="login-header">User Login</p>', unsafe_allow_html=True)
-            with st.form("user_login_form"):
-                user_login_user = st.text_input("Username", key="user_login_user")
-                user_login_pass = st.text_input("Password", type="password", key="user_login_pass")
-                if st.form_submit_button("Login", use_container_width=True):
-                    if not supabase:
-                        st.error("Database is not connected. Cannot log in.")
-                    elif user_login_user and user_login_pass:
-                        res = supabase.table('user_logins').select('username, hashed_password').eq('username', user_login_user).execute()
-                        if res.data:
-                            user_data = res.data[0]
-                            if verify_password(user_login_pass, user_data['hashed_password']):
-                                st.session_state['logged_in'] = True
-                                st.session_state['user_type'] = "user"
-                                st.session_state['username'] = user_login_user
-                                st.rerun()
-                            else:
-                                st.error("Incorrect username or password.")
+            user_login_user = st.text_input("Username", key="user_login_user")
+            user_login_pass = st.text_input("Password", type="password", key="user_login_pass")
+            if st.form_submit_button("Login", use_container_width=True):
+                if not supabase:
+                    st.error("Database is not connected. Cannot log in.")
+                elif user_login_user and user_login_pass:
+                    res = supabase.table('user_logins').select('username, hashed_password').eq('username', user_login_user).execute()
+                    if res.data:
+                        user_data = res.data[0]
+                        if verify_password(user_login_pass, user_data['hashed_password']):
+                            st.session_state['logged_in'] = True
+                            st.session_state['user_type'] = "user"
+                            st.session_state['username'] = user_login_user
+                            st.rerun()
                         else:
                             st.error("Incorrect username or password.")
                     else:
-                        st.warning("Please enter username and password.")
-            
-            st.markdown("<p style='text-align: center; color: white;'>or</p>", unsafe_allow_html=True)
-            social_cols = st.columns(2)
-            social_cols[0].button("Login with Google", use_container_width=True, key="google_login")
-            social_cols[1].button("Login with GitHub", use_container_width=True, key="github_login")
-
-
-        with register_tab:
-            st.markdown('<p class="login-header">Register New User</p>', unsafe_allow_html=True)
-            with st.form("user_reg_form"):
-                user_reg_user = st.text_input("Username", key="user_reg_user")
-                user_reg_pass = st.text_input("Password", type="password", key="user_reg_pass")
-                if st.form_submit_button("Register", use_container_width=True):
-                    if not supabase:
-                        st.error("Database is not connected. Cannot register.")
-                    elif user_reg_user and user_reg_pass:
-                        res = supabase.table('user_logins').select('username').eq('username', user_reg_user).execute()
-                        if res.data:
-                            st.error("Username already exists.")
-                        else:
-                            hashed_pass = hash_password(user_reg_pass)
-                            supabase.table('user_logins').insert({
-                                "username": user_reg_user,
-                                "user_type": "user",
-                                "hashed_password": hashed_pass
-                            }).execute()
-                            st.success("Registration successful! Please log in using the Login tab.")
-                    else:
-                        st.warning("Please enter a username and password.")
-        st.markdown('</div>', unsafe_allow_html=True)
+                        st.error("Incorrect username or password.")
+                else:
+                    st.warning("Please enter username and password.")
 
     st.markdown("""
         <div class="news-container">
             <div class="news-ticker">
-                <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong> Tata Group and CG Power–Renesas to boost manufacturing capacity. +++ <strong>Major Leap into Manufacturing: 3 Plants, Rs 1.26 Lakh Crore Investment Gets Nod.</strong> A significant step toward becoming self-reliant. +++ <strong>Maharashtra gets a boost with new Rs 63,647 crore plant.</strong> +++</p>
+                <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong>...</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
