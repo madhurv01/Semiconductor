@@ -1,7 +1,8 @@
+# Alternative, potentially more stable requirements.txt for deployment
 pandas
 streamlit
 google-generativeai
 supabase
 bcrypt
-tensorflow
+tensorflow-cpu
 scikit-learn
