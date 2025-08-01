@@ -12,15 +12,14 @@ if not st.session_state.get("logged_in"):
 st.title("About the India Semiconductor Mission (ISM)")
 st.markdown("---")
 
-# --- Video Player ---
-# This will display the video right after the main title.
-video_path = "videos/semi.mp4"
-if os.path.exists(video_path):
-    st.video(video_path)
+# --- First Video Player ---
+video_path_1 = "videos/semi.mp4"
+if os.path.exists(video_path_1):
+    st.video(video_path_1)
 else:
-    st.warning(f"Video file not found. Please ensure 'semi.mp4' is placed in the 'videos' folder.")
+    st.warning(f"Video file not found at '{video_path_1}'.")
 
-# --- NEW: Expanded Content Section ---
+# --- Expanded Content Section ---
 st.subheader("Why India is a Potential Semiconductor Manufacturing Hub")
 st.markdown("""
 India is strategically positioning itself to become a key player in the global semiconductor landscape. This ambition is not just based on policy but is supported by a unique combination of demographic, economic, and geopolitical advantages.
@@ -38,7 +37,17 @@ st.markdown("""
 
 st.markdown("---")
 
-# --- Existing "Objectives" Section (Remains the same) ---
+# --- NEW: Second Video Player with Heading ---
+st.subheader("Why India")
+video_path_2 = "videos/indi.mp4"
+if os.path.exists(video_path_2):
+    st.video(video_path_2)
+else:
+    st.warning(f"Video file not found at '{video_path_2}'.")
+
+st.markdown("---")
+
+# --- Existing "Objectives" Section ---
 col1, col2 = st.columns([1, 2])
 
 with col1:
