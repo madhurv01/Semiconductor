@@ -2,8 +2,9 @@ import streamlit as st
 import base64
 import os
 from supabase import create_client, Client
+import streamlit.components.v1 as components
 
-# --- Page Configuration (Must be the first Streamlit command) ---
+# --- Page Configuration ---
 st.set_page_config(
     page_title="SiliCoreX Portal",
     page_icon="🤖",
@@ -58,10 +59,9 @@ def perform_login(username, password, user_type, supabase_client):
         st.session_state['user_type'] = user_type
         st.session_state['username'] = username
         
-        # Write to database on successful login
         if supabase_client:
             try:
-                data, count = supabase_client.table('user_logins').insert({
+                supabase_client.table('user_logins').insert({
                     "username": username,
                     "user_type": user_type
                 }).execute()
@@ -73,63 +73,76 @@ def perform_login(username, password, user_type, supabase_client):
 
 # --- Main Page Rendering ---
 
-# If user is logged in, show the default themed pages
 if st.session_state.get('logged_in'):
     st.sidebar.success(f"Welcome, {st.session_state['username']}!")
-    
     if st.sidebar.button("Logout"):
         st.session_state['logged_in'] = False
         st.session_state['user_type'] = None
         st.session_state['username'] = None
         st.rerun()
-
     st.title("SiliCoreX Portal Dashboard")
     st.markdown("### Please select a tool from the sidebar to continue.")
-    
     if st.session_state.get('user_type') == 'gov':
         st.info("As a government user, you have access to the **Site Analysis Tool**.")
     else:
         st.info("You can view information about the **India Semiconductor Mission**.")
 
-# If user is NOT logged in, show the styled landing/login page
 else:
-    # --- THE DEFINITIVE FIX: Render all visuals FIRST ---
     load_css("style.css")
     set_page_background('images/background.png')
 
-    try:
-        left_gif_b64 = base64.b64encode(open("images/chip_left.gif", "rb").read()).decode()
-        right_gif_b64 = base64.b64encode(open("images/chip_right.gif", "rb").read()).decode()
-        st.markdown(f"""
-            <div class="header-flex-container">
-                <img src="data:image/gif;base64,{left_gif_b64}" class="header-gif">
-                <div class="title-block">
-                    <h1 class="main-title">SiliCoreX</h1>
-                    <p class="subtitle">AI-driven hybrid model for Semiconductor Analytics</p>
-                </div>
-                <img src="data:image/gif;base64,{right_gif_b64}" class="header-gif">
+    # --- THE DEFINITIVE FIX: Use st.columns and the correct component ---
+    header_cols = st.columns([1, 2, 1])
+    
+    with header_cols[0]:
+        try:
+            with open("images/chip_left.glb", "rb") as f:
+                left_model_data = f.read()
+            left_model_b64 = base64.b64encode(left_model_data).decode()
+            left_model_src = f"data:model/gltf-binary;base64,{left_model_b64}"
+            components.html(f"""
+                <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+                <model-viewer class="model-viewer" src="{left_model_src}" alt="A 3D model of a chip" auto-rotate camera-controls shadow-intensity="1"></model-viewer>
+            """, height=160)
+        except FileNotFoundError:
+            st.error("chip_left.glb not found in images folder.")
+
+    with header_cols[1]:
+        st.markdown("""
+            <div class="title-block">
+                <h1 class="main-title">SiliCoreX</h1>
+                <p class="subtitle">AI-driven hybrid model for Semiconductor Analytics</p>
             </div>
         """, unsafe_allow_html=True)
-    except FileNotFoundError:
-        st.error("Header GIF files not found. Please ensure 'chip_left.gif' and 'chip_right.gif' are in the 'images' folder.")
 
-    # --- THEN, handle backend initializations ---
+    with header_cols[2]:
+        try:
+            with open("images/chip_right.glb", "rb") as f:
+                right_model_data = f.read()
+            right_model_b64 = base64.b64encode(right_model_data).decode()
+            right_model_src = f"data:model/gltf-binary;base64,{right_model_b64}"
+            components.html(f"""
+                <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+                <model-viewer class="model-viewer" src="{right_model_src}" alt="A 3D model of a chip" auto-rotate camera-controls shadow-intensity="1"></model-viewer>
+            """, height=160)
+        except FileNotFoundError:
+            st.error("chip_right.glb not found in images folder.")
+            
+    # --- Supabase Initialization (after visual rendering) ---
     supabase = None
-    if "SUPABASE_URL" in st.secrets and "SUPABASE_KEY" in st.secrets:
-        supabase_url = st.secrets["SUPABASE_URL"]
-        supabase_key = st.secrets["SUPABASE_KEY"]
-        supabase = create_client(supabase_url, supabase_key)
-    else:
-        st.warning("Supabase credentials not found in secrets. Database logging will be disabled.")
+    try:
+        supabase = create_client(st.secrets.supabase_url, st.secrets.supabase_key)
+    except:
+        st.warning("Supabase credentials not found or invalid. Database logging will be disabled.")
 
     # --- Static content card ---
     st.markdown("""
-        <div class="glass-card">
-            <p class="section-header">Background (Problem)</p>
-            <div class="text-block">
-                The semiconductor industry faces challenges in site selection, resource management, and profitability forecasting due to complex dependencies on economic, logistical, and environmental factors. With rising demand for chips and constrained resources like pure water and raw materials, there is a critical need for data-driven tools to optimize manufacturing unit establishment and operations. The Indian government has launched ambitious initiatives under the <strong>India Semiconductor Mission (ISM)</strong> to build a self-reliant ecosystem.
-            </div>
+    <div class="glass-card">
+        <p class="section-header">Background (Problem)</p>
+        <div class="text-block">
+            The semiconductor industry faces challenges in site selection, resource management, and profitability forecasting due to complex dependencies on economic, logistical, and environmental factors. With rising demand for chips and constrained resources like pure water and raw materials, there is a critical need for data-driven tools to optimize manufacturing unit establishment and operations. The Indian government has launched ambitious initiatives under the <strong>India Semiconductor Mission (ISM)</strong> to build a self-reliant ecosystem.
         </div>
+    </div>
     """, unsafe_allow_html=True)
     
     col1, col2 = st.columns(2, gap="large")
@@ -159,9 +172,9 @@ else:
 
     # --- News Ticker at the bottom ---
     st.markdown("""
-        <div class="news-container">
-            <div class="news-ticker">
-                <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong> Tata Group and CG Power–Renesas to boost manufacturing capacity. +++ <strong>Major Leap into Manufacturing: 3 Plants, Rs 1.26 Lakh Crore Investment Gets Nod.</strong> A significant step toward becoming self-reliant. +++ <strong>Maharashtra gets a boost with new Rs 63,647 crore plant.</strong> +++</p>
-            </div>
+    <div class="news-container">
+        <div class="news-ticker">
+            <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong> Tata Group and CG Power–Renesas to boost manufacturing capacity. +++ <strong>Major Leap into Manufacturing: 3 Plants, Rs 1.26 Lakh Crore Investment Gets Nod.</strong> A significant step toward becoming self-reliant. +++ <strong>Maharashtra gets a boost with new Rs 63,647 crore plant.</strong> +++</p>
         </div>
+    </div>
     """, unsafe_allow_html=True)
