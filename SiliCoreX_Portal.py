@@ -152,11 +152,11 @@ else:
                             st.error("Incorrect username or password.")
                     else:
                         st.warning("Please enter username and password.")
-                
-                st.markdown("<p style='text-align: center; color: white;'>or</p>", unsafe_allow_html=True)
-                social_cols = st.columns(2)
-                social_cols[0].button("Login with Google", use_container_width=True, key="google_login")
-                social_cols[1].button("Login with GitHub", use_container_width=True, key="github_login")
+            
+            st.markdown("<p style='text-align: center; color: white;'>or</p>", unsafe_allow_html=True)
+            social_cols = st.columns(2)
+            social_cols[0].button("Login with Google", use_container_width=True, key="google_login")
+            social_cols[1].button("Login with GitHub", use_container_width=True, key="github_login")
 
 
         with register_tab:
