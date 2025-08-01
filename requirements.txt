@@ -2,5 +2,6 @@ pandas
 streamlit
 google-generativeai
 supabase
-streamlit-authenticator
 bcrypt
+tensorflow
+scikit-learn
