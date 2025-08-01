@@ -35,7 +35,7 @@ def set_page_background(png_file):
         '''
         st.markdown(page_bg_img, unsafe_allow_html=True)
     except FileNotFoundError:
-        st.warning(f"Background image not found at '{png_file}'.")
+        pass # Errors will be handled where files are used
 
 # --- Hashing Utilities ---
 def hash_password(password):
@@ -55,12 +55,11 @@ if 'username' not in st.session_state:
 # --- Supabase Initialization (Done once at the top) ---
 supabase = None
 try:
-    url = st.secrets.get("supabase_url") or st.secrets.get("SUPABASE_URL")
-    key = st.secrets.get("supabase_key") or st.secrets.get("SUPABASE_KEY")
-    if url and key:
-        supabase = create_client(url, key)
+    # Use the standard, direct method. This will raise an error if secrets are missing.
+    if "supabase_url" in st.secrets and "supabase_key" in st.secrets:
+        supabase = create_client(st.secrets["supabase_url"], st.secrets["supabase_key"])
 except Exception:
-    # Warning will be shown on the relevant pages
+    # The warning will be shown on the login page if supabase is still None
     pass
 
 # --- Main Page Rendering ---
@@ -75,33 +74,37 @@ if st.session_state.get('logged_in'):
     st.title("SiliCoreX Portal Dashboard")
     st.markdown("### Please select a tool from the sidebar to continue.")
     
-    # --- ADMIN-ONLY SECTION TO CREATE NEW USERS ---
     if st.session_state.get('user_type') == 'gov':
         st.info("As a government user, you have access to the **Site Analysis Tool**.")
-        with st.expander("🔑 Admin: Create New User"):
-            with st.form("create_user_form"):
-                st.markdown("Create a new standard user who can log in to view the mission page.")
-                new_username = st.text_input("New User's Username")
-                new_password = st.text_input("New User's Password", type="password")
-                if st.form_submit_button("Create User"):
-                    if not supabase:
-                        st.error("Database connection failed. Cannot create user.")
-                    elif new_username and new_password:
-                        # Check if user already exists
-                        res = supabase.table('user_logins').select('username').eq('username', new_username).execute()
-                        if res.data:
-                            st.error("This username already exists.")
+        # --- THE DEBUG TOOL ---
+        with st.expander("⚙️ Admin Tools & Debug"):
+            st.subheader("Secrets Verification")
+            st.write("This shows the names of the secrets your deployed app can see.")
+            st.write("They MUST exactly match the names used in the code (`supabase_url`, `supabase_key`, `GEMINI_API_KEY`).")
+            st.write(st.secrets.keys())
+
+            st.subheader("Create New User")
+            if not supabase:
+                st.error("Database connection failed. Cannot create user.")
+            else:
+                with st.form("create_user_form"):
+                    new_username = st.text_input("New User's Username")
+                    new_password = st.text_input("New User's Password", type="password")
+                    if st.form_submit_button("Create User"):
+                        if new_username and new_password:
+                            res = supabase.table('user_logins').select('username').eq('username', new_username).execute()
+                            if res.data:
+                                st.error("This username already exists.")
+                            else:
+                                hashed_pass = hash_password(new_password)
+                                supabase.table('user_logins').insert({
+                                    "username": new_username,
+                                    "user_type": "user",
+                                    "hashed_password": hashed_pass
+                                }).execute()
+                                st.success(f"User '{new_username}' created successfully!")
                         else:
-                            # Hash the password and insert the new user
-                            hashed_pass = hash_password(new_password)
-                            supabase.table('user_logins').insert({
-                                "username": new_username,
-                                "user_type": "user",
-                                "hashed_password": hashed_pass
-                            }).execute()
-                            st.success(f"User '{new_username}' created successfully!")
-                    else:
-                        st.warning("Please provide both a username and a password.")
+                            st.warning("Please provide both a username and a password.")
 
     else: # Regular user is logged in
         st.info("You can view information about the **India Semiconductor Mission**.")
@@ -127,7 +130,7 @@ else:
             right_model_src = f"data:model/gltf-binary;base64,{right_model_b64}"
             components.html(f"""<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script><model-viewer class="model-viewer" src="{right_model_src}" alt="A 3D model" auto-rotate camera-controls shadow-intensity="1"></model-viewer>""", height=160)
     except FileNotFoundError:
-        st.error("Header 3D model files not found.")
+        st.error("Header 3D model files not found. Please ensure 'chip_left.glb' and 'chip_right.glb' are in the 'images' folder.")
 
     if not supabase:
         st.warning("Supabase credentials not found or invalid. Database features are disabled.")
@@ -136,7 +139,7 @@ else:
     <div class="glass-card">
         <p class="section-header">Background (Problem)</p>
         <div class="text-block">
-            The semiconductor industry faces challenges in site selection, resource management, and profitability forecasting due to complex dependencies on economic, logistical, and environmental factors...
+            The semiconductor industry faces challenges...
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -182,8 +185,6 @@ else:
 
     st.markdown("""
         <div class="news-container">
-            <div class="news-ticker">
-                <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong>...</p>
-            </div>
+            ...
         </div>
     """, unsafe_allow_html=True)
