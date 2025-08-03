@@ -3,7 +3,6 @@ import base64
 import os
 from supabase import create_client, Client
 import streamlit.components.v1 as components
-import bcrypt
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -46,13 +45,6 @@ def set_page_background(png_file):
     except FileNotFoundError:
         st.warning(f"Background image not found at '{png_file}'.")
 
-# --- Hashing Utilities ---
-def hash_password(password):
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-def verify_password(password, hashed_password):
-    return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
-
 # --- Login State Management ---
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -69,31 +61,35 @@ try:
 except Exception:
     pass 
 
-# --- REFACTORED LOGIN LOGIC ---
-def attempt_login(username, password, user_type):
+# --- SIMPLIFIED LOGIN LOGIC ---
+def perform_login(username, password, user_type):
+    login_successful = False
     if user_type == "gov":
         if username in AUTHORIZED_GOV_USERS and password == "password":
-            st.session_state['logged_in'] = True
-            st.session_state['user_type'] = "gov"
-            st.session_state['username'] = username
-            return True
-        return False
-    
+            login_successful = True
     elif user_type == "user":
-        if not (username and password):
-            st.warning("Please enter both username and password.")
-            return False
-        if not supabase:
-            st.error("Database connection failed. Cannot log in.")
-            return False
+        # User login is successful if a username is provided
+        if username:
+            login_successful = True
+
+    if login_successful:
+        st.session_state['logged_in'] = True
+        st.session_state['user_type'] = user_type
+        st.session_state['username'] = username
         
-        res = supabase.table('user_logins').select('username, hashed_password').eq('username', username).execute()
-        if res.data and verify_password(password, res.data[0]['hashed_password']):
-            st.session_state['logged_in'] = True
-            st.session_state['user_type'] = "user"
-            st.session_state['username'] = username
-            return True
-        return False
+        # Log the simple details to the database
+        if supabase:
+            try:
+                supabase.table('user_logins').insert({
+                    "username": username,
+                    "user_type": user_type
+                }).execute()
+            except Exception as e:
+                # Fail silently if DB write fails, don't block the login
+                print(f"DB Log Error: {e}")
+        return True
+    
+    return False
 
 # --- Main Page Rendering ---
 if st.session_state.get('logged_in'):
@@ -109,26 +105,6 @@ if st.session_state.get('logged_in'):
     
     if st.session_state.get('user_type') == 'gov':
         st.info("As a government user, you have access to the **Site Analysis Tool** and the **Profit & Loss Forecasting Tool**.")
-        with st.expander("🔑 Admin: Create New User"):
-            if not supabase:
-                st.error("Database connection failed. Cannot create user.")
-            else:
-                with st.form("create_user_form"):
-                    new_username = st.text_input("New User's Username")
-                    new_password = st.text_input("New User's Password", type="password")
-                    if st.form_submit_button("Create User"):
-                        if new_username and new_password:
-                            res = supabase.table('user_logins').select('username').eq('username', new_username).execute()
-                            if res.data:
-                                st.error("This username already exists.")
-                            else:
-                                hashed_pass = hash_password(new_password)
-                                supabase.table('user_logins').insert({
-                                    "username": new_username, "user_type": "user", "hashed_password": hashed_pass
-                                }).execute()
-                                st.success(f"User '{new_username}' created successfully!")
-                        else:
-                            st.warning("Please provide both a username and a password.")
     else:
         st.info("You can view information about the **India Semiconductor Mission**.")
 else:
@@ -174,7 +150,7 @@ else:
             gov_user = st.text_input("Username", key="gov_user")
             gov_pass = st.text_input("Password", type="password", key="gov_pass")
             if st.form_submit_button("Login", use_container_width=True):
-                if attempt_login(gov_user, gov_pass, "gov"):
+                if perform_login(gov_user, gov_pass, "gov"):
                     st.rerun()
                 else:
                     st.error("Invalid government credentials.")
@@ -184,19 +160,19 @@ else:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("user_login_form"):
             st.markdown('<p class="login-header">User Login</p>', unsafe_allow_html=True)
-            user_login_user = st.text_input("Username", key="user_login_user")
-            user_login_pass = st.text_input("Password", type="password", key="user_login_pass")
+            user_user = st.text_input("Username", key="user_user")
+            user_pass = st.text_input("Password (optional)", type="password", key="user_pass")
             if st.form_submit_button("Login", use_container_width=True):
-                if not attempt_login(user_login_user, user_login_pass, "user"):
-                    st.error("Incorrect username or password.")
-                else:
+                if perform_login(user_user, user_pass, "user"):
                     st.rerun()
+                else:
+                    st.warning("Please enter a username.")
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
         <div class="news-container">
             <div class="news-ticker">
-                <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong>...</p>
+                <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong> Tata Group and CG Power–Renesas to boost manufacturing capacity. +++ <strong>Major Leap into Manufacturing: 3 Plants, Rs 1.26 Lakh Crore Investment Gets Nod.</strong> A significant step toward becoming self-reliant. +++ <strong>Maharashtra gets a boost with new Rs 63,647 crore plant.</strong> +++</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
