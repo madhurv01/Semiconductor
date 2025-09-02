@@ -6,3 +6,4 @@ supabase
 bcrypt
 tensorflow-cpu
 scikit-learn
+google-api-python-client
