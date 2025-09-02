@@ -1,0 +1,31 @@
+district,source_name,source_type,distance_from_center_km,total_dissolved_solids_ppm,ph_level,hardness_mg_L,turbidity_ntu,silica_mg_L
+Bagalkote,Ghataprabha River,River,15,234.46,7.83,237.16,18.34,38.74
+Bangalore Urban,Arkavathi River,River,25,236.3,7.28,193.89,12.33,29.07
+Bangalore Rural,Kaveri River (near Mekedatu),River,30,344.92,8.14,224.16,35.0,31.43
+Belagavi,Krishna River,River,20,353.05,6.96,214.49,29.5,36.58
+Bellary,Tungabhadra Reservoir,Reservoir,10,315.61,7.1,243.11,8.96,11.18
+Bidar,Manjara River,River,22,355.62,7.49,158.15,38.94,22.76
+Chamarajanagar,Kaveri River (near Shivanasamudra),River,18,365.16,8.05,100.54,37.47,35.61
+Chikkaballapur,Palar River,River,28,188.1,6.85,190.89,33.72,29.7
+Chikkamagaluru,Bhadra Reservoir,Reservoir,12,420.14,7.04,240.73,28.24,13.9
+Chitradurga,Vedavathi River,River,19,246.81,7.17,202.58,10.41,30.91
+Dakshina Kannada,Netravati River,River,8,120.5,7.5,75.2,4.8,24.31
+Davanagere,Tunga River,River,14,398.22,7.11,113.93,35.51,24.48
+Dharwad,Malaprabha River,River,16,256.51,7.82,91.38,19.16,44.41
+Gadag,Tungabhadra River,River,25,297.89,8.04,220.14,28.77,39.94
+Hassan,Hemavathi Reservoir,Reservoir,9,312.55,7.71,99.82,27.58,10.65
+Haveri,Varada River,River,17,272.51,7.45,176.64,14.13,34.15
+Kalaburagi,Bhima River,River,24,480.2,8.06,280.6,35.1,41.09
+Kodagu,Kaveri River (Talakaveri),River,5,442.39,7.33,130.24,10.22,10.57
+Kolar,Ponnaiyar River,River,30,224.78,7.56,186.51,32.89,17.21
+Koppal,Tungabhadra River,River,26,281.63,8.0,127.93,37.28,20.08
+Mandya,KRS Reservoir,Reservoir,11,440.3,7.98,110.05,36.13,26.46
+Mysuru,Kabini Reservoir,Reservoir,7,165.7,7.29,90.3,8.2,18.02
+Raichur,Krishna River,River,21,250.47,7.28,151.87,10.94,11.48
+Ramanagara,Arkavathi Reservoir,Reservoir,13,381.74,7.4,159.55,12.72,17.75
+Shivamogga,Tunga Reservoir,Reservoir,6,256.91,6.89,182.21,38.76,18.42
+Tumakuru,Jayathi River,River,23,160.61,6.94,246.29,8.81,37.29
+Udupi,Swarna River,River,10,340.17,6.94,215.21,5.31,23.86
+Uttara Kannada,Kali River,River,15,444.89,7.66,209.7,31.82,15.21
+Vijayapura,Krishna River,River,18,404.13,6.91,87.15,36.11,21.32
+Yadgir,Krishna River,River,20,282.1,8.17,199.6,36.34,49.92
