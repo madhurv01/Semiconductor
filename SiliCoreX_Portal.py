@@ -1,9 +1,8 @@
 import streamlit as st
 import base64
 import os
-import streamlit.components.v1 as components
 from supabase import create_client, Client
-import bcrypt
+import streamlit.components.v1 as components
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -46,13 +45,6 @@ def set_page_background(png_file):
     except FileNotFoundError:
         st.warning(f"Background image not found at '{png_file}'.")
 
-# --- Hashing Utilities ---
-def hash_password(password):
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-def verify_password(password, hashed_password):
-    return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
-
 # --- Login State Management ---
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -69,70 +61,53 @@ try:
 except Exception:
     pass 
 
-# --- Login Logic Function ---
+# --- SIMPLIFIED LOGIN LOGIC ---
 def perform_login(username, password, user_type):
+    login_successful = False
     if user_type == "gov":
         if username in AUTHORIZED_GOV_USERS and password == "password":
-            st.session_state['logged_in'] = True
-            st.session_state['user_type'] = "gov"
-            st.session_state['username'] = username
-            return True
-        else:
-            return False
+            login_successful = True
     elif user_type == "user":
-        if not (username and password):
-            st.warning("Please enter both username and password.")
-            return False
-        if not supabase:
-            st.error("Database is not connected. Cannot log in.")
-            return False
+        # User login is successful if a username is provided
+        if username:
+            login_successful = True
+
+    if login_successful:
+        st.session_state['logged_in'] = True
+        st.session_state['user_type'] = user_type
+        st.session_state['username'] = username
         
-        res = supabase.table('user_logins').select('username, hashed_password').eq('username', username).execute()
-        if res.data:
-            user_data = res.data[0]
-            if verify_password(password, user_data['hashed_password']):
-                st.session_state['logged_in'] = True
-                st.session_state['user_type'] = "user"
-                st.session_state['username'] = username
-                return True
-        return False
+        # Log the simple details to the database
+        if supabase:
+            try:
+                supabase.table('user_logins').insert({
+                    "username": username,
+                    "user_type": user_type
+                }).execute()
+            except Exception as e:
+                # Fail silently if DB write fails, don't block the login
+                print(f"DB Log Error: {e}")
+        return True
+    
+    return False
 
 # --- Main Page Rendering ---
 if st.session_state.get('logged_in'):
-    # --- NEW: This block now adds the labels to the sidebar on every page ---
     st.sidebar.success(f"Welcome, {st.session_state['username']}!")
-    
-    # Display the appropriate labels based on the user type
-    if st.session_state.get('user_type') == 'gov':
-        st.sidebar.markdown("---")
-        st.sidebar.markdown("### Government Tools")
-        # Streamlit will automatically place the relevant pages below this
-    
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### Public Portal")
-    # Streamlit will automatically place the public pages below this
-
-    st.sidebar.markdown("---")
     if st.sidebar.button("Logout"):
         st.session_state['logged_in'] = False
         st.session_state['user_type'] = None
         st.session_state['username'] = None
         st.rerun()
 
-    # The rest of the page logic (dashboard)
     st.title("SiliCoreX Portal Dashboard")
     st.markdown("### Please select a tool from the sidebar to continue.")
     
     if st.session_state.get('user_type') == 'gov':
-        st.info("As a government user, you have access to specialized analysis tools.")
-        # Admin tool to create new users remains
-        with st.expander("🔑 Admin: Create New User"):
-            # ... (create user form code remains the same)
-            pass 
+        st.info("As a government user, you have access to the **Site Analysis Tool** and the **Profit & Loss Forecasting Tool**.")
     else:
-        st.info("Welcome! You can explore public information about the India Semiconductor Mission and find job opportunities.")
+        st.info("You can view information about the **India Semiconductor Mission**.")
 else:
-    # --- LOGIN PAGE LOGIC (remains unchanged) ---
     load_css("style.css")
     set_page_background('images/background.png')
 
@@ -169,6 +144,7 @@ else:
     
     col1, col2 = st.columns(2, gap="large")
     with col1:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("gov_login_form"):
             st.markdown('<p class="login-header">Government Login</p>', unsafe_allow_html=True)
             gov_user = st.text_input("Username", key="gov_user")
@@ -178,17 +154,20 @@ else:
                     st.rerun()
                 else:
                     st.error("Invalid government credentials.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("user_login_form"):
             st.markdown('<p class="login-header">User Login</p>', unsafe_allow_html=True)
-            user_login_user = st.text_input("Username", key="user_login_user")
-            user_login_pass = st.text_input("Password", type="password", key="user_login_pass")
+            user_user = st.text_input("Username", key="user_user")
+            user_pass = st.text_input("Password (optional)", type="password", key="user_pass")
             if st.form_submit_button("Login", use_container_width=True):
-                if perform_login(user_login_user, user_login_pass, "user"):
+                if perform_login(user_user, user_pass, "user"):
                     st.rerun()
                 else:
-                    st.error("Incorrect username or password.")
+                    st.warning("Please enter a username.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
         <div class="news-container">
