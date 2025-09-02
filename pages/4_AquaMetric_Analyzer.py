@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 import sys
 sys.path.append('.') # Allows importing from the root directory
-
-# --- THIS IS THE CORRECTED IMPORT LINE ---
 from analysis import create_html_report # Re-using the HTML report generator
 from translations import DISTRICT_MAP_EN_KN
 import google.generativeai as genai
@@ -26,9 +24,9 @@ def load_water_data():
 
 water_df = load_water_data()
 
-# --- AI Analysis Function ---
-@st.cache_data # Cache the AI response for a given district to save API calls
-def get_water_analysis(source_data_tuple, district_name):
+# --- AI Analysis Function (NOW BILINGUAL) ---
+@st.cache_data # Cache the AI response for a given district/language combination
+def get_water_analysis(source_data_tuple, district_name, language='en'):
     source_data = dict(source_data_tuple) # Convert tuple back to dict for processing
     try:
         api_key = st.secrets["GEMINI_API_KEY"]
@@ -38,6 +36,7 @@ def get_water_analysis(source_data_tuple, district_name):
         st.error("Failed to configure AI Model. Have you added your GEMINI_API_KEY to secrets?")
         return None
 
+    # Prompt is always engineered in English for maximum accuracy
     prompt = f"""
     **Role:** You are a senior water purification engineer for the semiconductor industry.
     **Objective:** Analyze the provided raw water source data and assess its suitability for producing Ultra-Pure Water (UPW) for a new semiconductor fab in {district_name}.
@@ -52,14 +51,23 @@ def get_water_analysis(source_data_tuple, district_name):
     - Silica: {source_data['silica_mg_L']} mg/L
     **Your Task (Generate a Markdown Report):**
     1.  **Initial Quality Assessment:** In one sentence, classify the raw water quality as 'Excellent', 'Good', 'Moderate', or 'Poor' for UPW purposes.
-    2.  **Key Challenges:** Identify the top 2-3 challenges for purification (e.g., "High initial TDS will require a multi-stage reverse osmosis system.").
-    3.  **Recommended Purification Train:** Briefly list the essential technologies required (e.g., Pre-treatment, Reverse Osmosis, Degasification, Ion Exchange, UV Sterilization).
-    4.  **Feasibility Score:** Conclude with a "Purification Feasibility Score" on a scale of 1 to 10 (1=Extremely Difficult/Costly, 10=Very Feasible) and a one-sentence justification.
+    2.  **Key Challenges:** Identify the top 2-3 challenges for purification.
+    3.  **Recommended Purification Train:** Briefly list the essential technologies required.
+    4.  **Feasibility Score:** Conclude with a "Purification Feasibility Score" on a scale of 1 to 10 and a one-sentence justification.
     """
     
     try:
-        response = model.generate_content(prompt)
-        return response.text
+        # Step 1: Generate the expert analysis in English
+        english_report = model.generate_content(prompt).text
+        
+        # Step 2: If Kannada is requested, make a second API call to translate the report
+        if language == 'kn' and english_report:
+            translation_prompt = f"Translate the following technical report accurately and professionally into formal Kannada. Retain the original Markdown formatting (like **bold text**):\n\n---\n\n{english_report}"
+            kannada_report = model.generate_content(translation_prompt).text
+            return kannada_report
+            
+        return english_report
+
     except Exception as e:
         st.error(f"An error occurred while communicating with the AI model: {e}")
         return None
@@ -72,8 +80,17 @@ st.info("This tool analyzes the nearest major water source for a selected distri
 if water_df is None:
     st.error("Water source dataset not found. Please run `generate_water_data.py` first.")
 else:
+    # --- Language selection added to the page ---
     lang = st.session_state.get('lang', 'en')
-    
+    selected_lang_display = st.radio(
+        label="Select Language",
+        options=['English', 'ಕನ್ನಡ'],
+        index=0 if lang == 'en' else 1,
+        horizontal=True
+    )
+    st.session_state['lang'] = 'en' if selected_lang_display == 'English' else 'kn'
+    lang = st.session_state['lang'] # Update lang variable
+
     if lang == 'kn':
         available_districts_en = [dist for dist in sorted(water_df['district'].unique()) if dist in DISTRICT_MAP_EN_KN]
         display_districts = [DISTRICT_MAP_EN_KN.get(dist, dist) for dist in available_districts_en]
@@ -91,7 +108,6 @@ else:
         analyze_button = st.button("Analyze Water Source", type="primary", use_container_width=True)
 
     if lang == 'kn':
-        # Find the English key from the Kannada value
         district_en = next((k for k, v in DISTRICT_MAP_EN_KN.items() if v == selected_district_display), selected_district_display)
     else:
         district_en = selected_district_display
@@ -102,16 +118,15 @@ else:
         with col2:
             st.subheader(f"Analysis for {selected_district_display}")
             with st.spinner("AI is analyzing the water quality data..."):
-                # Convert DataFrame row to a hashable tuple for caching
                 source_info_tuple = tuple(source_info.to_dict().items())
-                analysis_report = get_water_analysis(source_info_tuple, selected_district_display)
+                # Pass the selected language to the analysis function
+                analysis_report = get_water_analysis(source_info_tuple, selected_district_display, language=lang)
 
             if analysis_report:
                 st.markdown(analysis_report)
                 
-                # --- THIS IS THE CORRECTED DOWNLOAD SECTION ---
                 st.markdown("---")
-                # Use the correct function: create_html_report
+                # Pass the language to the report generator
                 html_bytes = create_html_report(analysis_report, lang, district_en)
                 if html_bytes:
                     st.download_button(
