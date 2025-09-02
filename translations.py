@@ -59,6 +59,47 @@ LANG_STRINGS = {
     'pdf_report_title': { # Note: Re-using this key for the HTML title
         'en': "Semiconductor Fab Site Feasibility Report",
         'kn': "ಸೆಮಿಕಂಡಕ್ಟರ್ ಫ್ಯಾಬ್ ಸೈಟ್ ಕಾರ್ಯಸಾಧ್ಯತಾ ವರದಿ"
+    },
+    'job_portal_title': {
+        'en': "🛰️ Semiconductor Job Portal",
+        'kn': "🛰️ ಸೆಮಿಕಂಡಕ್ಟರ್ ಉದ್ಯೋಗ ಪೋರ್ಟಲ್"
+    },
+    'job_portal_info': {
+        'en': "Find real-time job openings in the Indian semiconductor industry from top hiring platforms.",
+        'kn': "ಉನ್ನತ ನೇಮಕಾತಿ ಪ್ಲಾಟ್‌ಫಾರ್ಮ್‌ಗಳಿಂದ ಭಾರತೀಯ ಸೆಮಿಕಂಡಕ್ಟರ್ ಉದ್ಯಮದಲ್ಲಿ ನೈಜ-ಸಮಯದ ಉದ್ಯೋಗಾವಕಾಶಗಳನ್ನು ಹುಡುಕಿ."
+    },
+    'job_type_label': {
+        'en': "Select Job Type",
+        'kn': "ಉದ್ಯೋಗ ಪ್ರಕಾರವನ್ನು ಆಯ್ಕೆಮಾಡಿ"
+    },
+    'experience_label': {
+        'en': "Experience in Years",
+        'kn': "ವರ್ಷಗಳ ಅನುಭವ"
+    },
+    'search_button': {
+        'en': "Search for Jobs",
+        'kn': "ಉದ್ಯೋಗಗಳಿಗಾಗಿ ಹುಡುಕಿ"
+    },
+    'spinner_text_jobs': {
+        'en': "Searching for {job_type} jobs with {experience} years experience...",
+        'kn': "{experience} ವರ್ಷಗಳ ಅನುಭವದೊಂದಿಗೆ {job_type} ಉದ್ಯೋಗಗಳಿಗಾಗಿ ಹುಡುಕಲಾಗುತ್ತಿದೆ..."
+    },
+    'results_header': {
+        'en': "Search Results ({count} found)",
+        'kn': "ಹುಡುಕಾಟ ಫಲಿತಾಂಶಗಳು ({count} ಸಿಕ್ಕಿವೆ)"
+    },
+    'no_results_warning': {
+        'en': "No job openings found matching your criteria. Try broadening your search.",
+        'kn': "ನಿಮ್ಮ ಮಾನದಂಡಗಳಿಗೆ ಹೊಂದುವ ಯಾವುದೇ ಉದ್ಯೋಗಾವಕಾಶಗಳು ಕಂಡುಬಂದಿಲ್ಲ. ನಿಮ್ಮ ಹುಡುಕಾಟವನ್ನು ವಿಸ್ತರಿಸಲು ಪ್ರಯತ್ನಿಸಿ."
+    },
+    'apply_button_text': {
+        'en': "Apply Now &rarr;",
+        'kn': "ಈಗ ಅನ್ವಯಿಸಿ &rarr;"
+    },
+    # --- Job Type Translations ---
+    'job_types': {
+        'en': ["Hardware", "Software", "VLSI Design", "Chip Design", "Verification", "Firmware"],
+        'kn': ["ಹಾರ್ಡ್‌ವೇರ್", "ಸಾಫ್ಟ್‌ವೇರ್", "ವಿಎಲ್‌ಎಸ್‌ಐ ವಿನ್ಯಾಸ", "ಚಿಪ್ ವಿನ್ಯಾಸ", "ಪರಿಶೀಲನೆ", "ಫರ್ಮ್‌ವೇರ್"]
     }
 }
 
