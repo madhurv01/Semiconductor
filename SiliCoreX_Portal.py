@@ -27,36 +27,24 @@ def load_css(file_name):
     with open(file_name) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-# --- NEW: Function to embed a background video for the portal ---
-def add_portal_bg_video():
-    video_path = "videos/portal_bg.mp4"
+# --- Function to set background image (Restored) ---
+def set_page_background(png_file):
     try:
-        with open(video_path, "rb") as video_file:
-            video_bytes = video_file.read()
-        video_b64 = base64.b64encode(video_bytes).decode()
-        
-        st.markdown(f"""
+        with open(png_file, "rb") as f:
+            data = f.read()
+        bin_str = base64.b64encode(data).decode()
+        page_bg_img = f'''
         <style>
         .stApp {{
-            background: #0E1117; /* Fallback color */
-        }}
-        #bg-video {{
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: -2;
-            opacity: 0.6; /* Highlighted visibility */
+            background-image: url("data:image/png;base64,{bin_str}");
+            background-size: cover;
+            background-position: center;
         }}
         </style>
-        <video autoplay muted loop id="bg-video">
-            <source src="data:video/mp4;base64,{video_b64}" type="video/mp4">
-        </video>
-        """, unsafe_allow_html=True)
+        '''
+        st.markdown(page_bg_img, unsafe_allow_html=True)
     except FileNotFoundError:
-        st.warning("Portal background video 'portal_bg.mp4' not found. Please add it to the 'videos' folder.")
+        st.warning(f"Background image not found at '{png_file}'.")
 
 # --- Hashing Utilities ---
 def hash_password(password):
@@ -83,7 +71,6 @@ except Exception:
 
 # --- Login Logic Function ---
 def perform_login(username, password, user_type):
-    # ... (This function remains unchanged)
     if user_type == "gov":
         if username in AUTHORIZED_GOV_USERS and password == "password":
             st.session_state['logged_in'] = True
@@ -125,25 +112,48 @@ if st.session_state.get('logged_in'):
     if st.session_state.get('user_type') == 'gov':
         st.info("As a government user, you have access to specialized analysis tools.")
         with st.expander("🔑 Admin: Create New User"):
-            # ... (create user form code remains unchanged)
-            pass 
+            if not supabase:
+                st.error("Database connection failed. Cannot create user.")
+            else:
+                with st.form("create_user_form"):
+                    new_username = st.text_input("New User's Username")
+                    new_password = st.text_input("New User's Password", type="password")
+                    if st.form_submit_button("Create User"):
+                        if new_username and new_password:
+                            res = supabase.table('user_logins').select('username').eq('username', new_username).execute()
+                            if res.data:
+                                st.error("This username already exists.")
+                            else:
+                                hashed_pass = hash_password(new_password)
+                                supabase.table('user_logins').insert({
+                                    "username": new_username, "user_type": "user", "hashed_password": hashed_pass
+                                }).execute()
+                                st.success(f"User '{new_username}' created successfully!")
+                        else:
+                            st.warning("Please provide both a username and a password.")
     else:
-        st.info("Welcome! You can view information about the India Semiconductor Mission and find job opportunities.")
+        st.info("Welcome! You can explore public information about the India Semiconductor Mission and find job opportunities.")
 else:
     # --- LOGIN PAGE LOGIC ---
     load_css("style.css")
-    add_portal_bg_video() # <-- CALL THE NEW BACKGROUND VIDEO FUNCTION
+    set_page_background('images/background.png')
 
     try:
         header_cols = st.columns([1, 2, 1])
         with header_cols[0]:
-            # ... (3D model code remains unchanged)
-            pass
+            with open("images/chip_left.glb", "rb") as f:
+                left_model_data = f.read()
+            left_model_b64 = base64.b64encode(left_model_data).decode()
+            left_model_src = f"data:model/gltf-binary;base64,{left_model_b64}"
+            components.html(f"""<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script><model-viewer class="model-viewer" src="{left_model_src}" alt="A 3D model" auto-rotate camera-controls shadow-intensity="1"></model-viewer>""", height=160)
         with header_cols[1]:
             st.markdown("""<div class="title-block"><h1 class="main-title">SiliCoreX</h1><p class="subtitle">AI-driven hybrid model for Semiconductor Analytics</p></div>""", unsafe_allow_html=True)
         with header_cols[2]:
-            # ... (3D model code remains unchanged)
-            pass
+            with open("images/chip_right.glb", "rb") as f:
+                right_model_data = f.read()
+            right_model_b64 = base64.b64encode(right_model_data).decode()
+            right_model_src = f"data:model/gltf-binary;base64,{right_model_b64}"
+            components.html(f"""<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script><model-viewer class="model-viewer" src="{right_model_src}" alt="A 3D model" auto-rotate camera-controls shadow-intensity="1"></model-viewer>""", height=160)
     except FileNotFoundError:
         st.error("Header 3D model files not found.")
 
@@ -154,7 +164,7 @@ else:
     <div class="glass-card">
         <p class="section-header">Background (Problem)</p>
         <div class="text-block">
-             The semiconductor industry faces challenges...
+             The semiconductor industry faces challenges in site selection, resource management, and profitability forecasting due to complex dependencies on economic, logistical, and environmental factors. With rising demand for chips and constrained resources like pure water and raw materials, there is a critical need for data-driven tools to optimize manufacturing unit establishment and operations. The Indian government has launched ambitious initiatives under the <strong>India Semiconductor Mission (ISM)</strong> to build a self-reliant ecosystem.
         </div>
     </div>
     """, unsafe_allow_html=True)

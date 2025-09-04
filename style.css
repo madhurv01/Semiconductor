@@ -4,7 +4,7 @@
 :root {
     --primary-glow: #00A8E8;
     --primary-glow-transparent: rgba(0, 168, 232, 0.7);
-    --card-bg: rgba(10, 25, 47, 0.65); /* Made cards slightly more opaque for readability over video */
+    --card-bg: rgba(20, 40, 70, 0.35);
     --card-border: rgba(0, 168, 232, 0.2);
     --card-hover-border: var(--primary-glow);
     --text-color: #E6F1FF;
@@ -16,7 +16,7 @@ body {
     font-family: var(--body-font);
 }
 
-/* --- Futuristic Header with 3D Models --- */
+/* --- Futuristic Header with 3D Models (Flexbox) --- */
 .header-flex-container {
     display: flex;
     align-items: center;
@@ -36,7 +36,6 @@ body {
 .title-block {
     text-align: center;
     margin: 0;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7); /* Add shadow for readability */
 }
 
 .main-title {
@@ -59,11 +58,11 @@ body {
     letter-spacing: 1px;
 }
 
-/* --- Glassmorphism Card (Targeting stForm and custom class) --- */
-.glass-card, [data-testid="stForm"] {
+/* --- Glassmorphism Card (Targeting stForm for robustness) --- */
+.glass-card {
     background: var(--card-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: 15px;
     border: 1px solid var(--card-border);
     padding: 2rem 2.5rem;
@@ -72,7 +71,7 @@ body {
     transition: all 0.3s ease-in-out;
 }
 
-.glass-card:hover, [data-testid="stForm"]:hover {
+.glass-card:hover {
     transform: translateY(-8px) scale(1.02);
     border-color: var(--card-hover-border);
     box-shadow: 0 10px 30px rgba(0, 168, 232, 0.3);
@@ -87,7 +86,6 @@ body {
     padding-bottom: 15px;
     margin-top: 0;
     margin-bottom: 1.5rem;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
 }
 
 .text-block {
@@ -95,7 +93,6 @@ body {
     font-size: 1.1rem;
     font-weight: 300;
     text-align: left;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 /* News Ticker */
@@ -110,13 +107,16 @@ body {
     backdrop-filter: blur(5px);
 }
 
+.news-ticker {
+    display: inline-block;
+    padding-left: 100%;
+    animation: marquee 30s linear infinite;
+}
+
 .news-ticker p {
     margin: 0;
     color: #FFFFFF;
     font-size: 1.1rem;
-    display: inline-block;
-    padding-left: 100%;
-    animation: marquee 30s linear infinite;
 }
 
 @keyframes marquee {
