@@ -100,6 +100,38 @@ LANG_STRINGS = {
     'job_types': {
         'en': ["Hardware", "Software", "VLSI Design", "Chip Design", "Verification", "Firmware"],
         'kn': ["ಹಾರ್ಡ್‌ವೇರ್", "ಸಾಫ್ಟ್‌ವೇರ್", "ವಿಎಲ್‌ಎಸ್‌ಐ ವಿನ್ಯಾಸ", "ಚಿಪ್ ವಿನ್ಯಾಸ", "ಪರಿಶೀಲನೆ", "ಫರ್ಮ್‌ವೇರ್"]
+    },
+    'logichain_title': {
+        'en': "⛓️ LogiChain - Supply Chain Risk Simulator",
+        'kn': "⛓️ ಲಾಜಿಚೈನ್ - ಪೂರೈಕೆ ಸರಪಳಿ ಅಪಾಯ ಸಿಮ್ಯುಲೇಟರ್"
+    },
+    'logichain_info': {
+        'en': "This tool assesses the logistical viability of a potential fab site by analyzing its distance to critical supply chain hubs.",
+        'kn': "ಈ ಉಪಕರಣವು ಪ್ರಮುಖ ಪೂರೈಕೆ ಸರಪಳಿ ಕೇಂದ್ರಗಳಿಗೆ ಇರುವ ದೂರವನ್ನು ವಿಶ್ಲೇಷಿಸುವ ಮೂಲಕ ಸಂಭಾವ್ಯ ಫ್ಯಾಬ್ ಸೈಟ್‌ನ ವ್ಯವಸ್ಥಾಪನ ಕಾರ್ಯಸಾಧ್ಯತೆಯನ್ನು ನಿರ್ಣಯಿಸುತ್ತದೆ."
+    },
+    'logichain_select_district_header': {
+        'en': "Select a District",
+        'kn': "ಒಂದು ಜಿಲ್ಲೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ"
+    },
+    'logichain_select_district_label': {
+        'en': "Select a district to simulate its supply chain:",
+        'kn': "ಅದರ ಪೂರೈಕೆ ಸರಪಳಿಯನ್ನು ಅನುಕರಿಸಲು ಒಂದು ಜಿಲ್ಲೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ:"
+    },
+    'logichain_analyze_button': {
+        'en': "Analyze Supply Chain",
+        'kn': "ಪೂರೈಕೆ ಸರಪಳಿಯನ್ನು ವಿಶ್ಲೇಷಿಸಿ"
+    },
+    'logichain_map_header': {
+        'en': "Logistical Map",
+        'kn': "ವ್ಯವಸ್ಥಾಪನ ನಕ್ಷೆ"
+    },
+    'logichain_report_header': {
+        'en': "AI-Generated Risk Report for {district}",
+        'kn': "{district} ಗಾಗಿ AI-ರಚಿತ ಅಪಾಯ ವರದಿ"
+    },
+    'logichain_spinner': {
+        'en': "AI is analyzing logistical data...",
+        'kn': "AI ವ್ಯವಸ್ಥಾಪನ ಡೇಟಾವನ್ನು ವಿಶ್ಲೇಷಿಸುತ್ತಿದೆ..."
     }
 }
 
