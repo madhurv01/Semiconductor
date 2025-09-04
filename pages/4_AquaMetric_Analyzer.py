@@ -3,7 +3,7 @@ import pandas as pd
 import sys
 import base64
 sys.path.append('.') # Allows importing from the root directory
-from analysis import create_html_report # Re-using the HTML report generator
+from analysis import create_html_report
 from translations import DISTRICT_MAP_EN_KN
 import google.generativeai as genai
 
@@ -14,55 +14,43 @@ if st.session_state.get("user_type") != "gov":
     st.error("ACCESS DENIED: This tool is available for Government Login only.")
     st.stop()
 
-# --- NEW: Function to embed a background video with enhanced styling ---
-def add_bg_video():
-    video_path = "videos/water_bg.mp4"
+# --- REVERTED: Function to embed a dedicated background image ---
+def add_page_bg(image_file):
     try:
-        with open(video_path, "rb") as video_file:
-            video_bytes = video_file.read()
-        video_b64 = base64.b64encode(video_bytes).decode()
-        
-        st.markdown(f"""
+        with open(image_file, "rb") as f:
+            encoded_string = base64.b64encode(f.read()).decode()
+        st.markdown(
+        f"""
         <style>
-        /* Remove default Streamlit background */
-        [data-testid="stAppViewContainer"] > .main {{
-            background: none;
-        }}
         .stApp {{
-            background: #0E1117; /* Fallback color */
+            background-image: url(data:image/jpeg;base64,{encoded_string});
+            background-size: cover;
+            background-position: center;
         }}
-        /* Full-screen video player */
-        #bg-video {{
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: -2; /* Sit behind everything */
-            opacity: 0.6; /* --- INCREASED: Makes video more visible --- */
-        }}
-        /* Style for containers to make them more transparent */
+        /* Style for containers to make them glass-like and readable */
         [data-testid="stVerticalBlock"], [data-testid="stHorizontalBlock"] {{
-            background: rgba(10, 25, 47, 0.65); /* --- MORE TRANSPARENT --- */
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(10, 25, 47, 0.45); /* Highly transparent */
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
             border-radius: 10px;
             padding: 20px;
             border: 1px solid rgba(0, 168, 232, 0.2);
             margin-bottom: 20px;
         }}
-        /* Enhance text readability with a shadow */
-        h1, h2, h3, h4, p, .st-emotion-cache-1yy083c, .st-emotion-cache-1629p8f e1nzilvr5, .st-emotion-cache-1njjmv6, .st-emotion-cache-1r6slb0, .st-emotion-cache-1hg5474, .st-emotion-cache-1q8dd3i {{
-             text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+        /* Enhance text readability with a stronger shadow */
+        h1, h2, h3, h4, p, .st-emotion-cache-1yy083c, .st-emotion-cache-1629p8f, .st-emotion-cache-1njjmv6, .st-emotion-cache-1r6slb0, .st-emotion-cache-1hg5474, .st-emotion-cache-1q8dd3i {{
+             text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
         }}
         </style>
-        <video autoplay muted loop id="bg-video">
-            <source src="data:video/mp4;base64,{video_b64}" type="video/mp4">
-        </video>
-        """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+        )
     except FileNotFoundError:
-        st.warning("Background video 'water_bg.mp4' not found. Please add it to the 'videos' folder.")
+        st.warning("Background image 'wat.jpg' not found. Please add it to the 'images' folder.")
+
+# --- Call the function to set the background ---
+add_page_bg("images/wat.jpg")
+
 
 # --- Load the Water Dataset (cached for performance) ---
 @st.cache_data
@@ -118,8 +106,6 @@ def get_water_analysis(source_data_tuple, district_name, language='en'):
         return None
 
 # --- Page UI ---
-add_bg_video()
-
 st.title("💧 AquaMetric - Water Source & Purity Analyzer")
 st.markdown("---")
 st.info("This tool analyzes the nearest major water source for a selected district and uses AI to assess the feasibility of purifying it to Ultra-Pure Water (UPW) standards required for semiconductor manufacturing.")
