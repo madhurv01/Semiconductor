@@ -14,7 +14,7 @@ if st.session_state.get("user_type") != "gov":
     st.error("ACCESS DENIED: This tool is available for Government Login only.")
     st.stop()
 
-# --- NEW: Function to embed a background video ---
+# --- NEW: Function to embed a background video with enhanced styling ---
 def add_bg_video():
     video_path = "videos/water_bg.mp4"
     try:
@@ -24,12 +24,14 @@ def add_bg_video():
         
         st.markdown(f"""
         <style>
+        /* Remove default Streamlit background */
         [data-testid="stAppViewContainer"] > .main {{
-            background: none; /* Remove default background */
+            background: none;
         }}
         .stApp {{
             background: #0E1117; /* Fallback color */
         }}
+        /* Full-screen video player */
         #bg-video {{
             position: fixed;
             top: 0;
@@ -37,18 +39,22 @@ def add_bg_video():
             width: 100vw;
             height: 100vh;
             object-fit: cover;
-            z-index: -1;
-            opacity: 0.3; /* Make it subtle */
+            z-index: -2; /* Sit behind everything */
+            opacity: 0.6; /* --- INCREASED: Makes video more visible --- */
         }}
-        /* Add some glassmorphism to the input/output containers for readability */
-        [data-testid="stVerticalBlock"] {{
-            background: rgba(10, 25, 47, 0.5);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+        /* Style for containers to make them more transparent */
+        [data-testid="stVerticalBlock"], [data-testid="stHorizontalBlock"] {{
+            background: rgba(10, 25, 47, 0.65); /* --- MORE TRANSPARENT --- */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border-radius: 10px;
             padding: 20px;
             border: 1px solid rgba(0, 168, 232, 0.2);
             margin-bottom: 20px;
+        }}
+        /* Enhance text readability with a shadow */
+        h1, h2, h3, h4, p, .st-emotion-cache-1yy083c, .st-emotion-cache-1629p8f e1nzilvr5, .st-emotion-cache-1njjmv6, .st-emotion-cache-1r6slb0, .st-emotion-cache-1hg5474, .st-emotion-cache-1q8dd3i {{
+             text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
         }}
         </style>
         <video autoplay muted loop id="bg-video">
@@ -112,8 +118,6 @@ def get_water_analysis(source_data_tuple, district_name, language='en'):
         return None
 
 # --- Page UI ---
-
-# Call the function to set the background video at the very top
 add_bg_video()
 
 st.title("💧 AquaMetric - Water Source & Purity Analyzer")
