@@ -14,7 +14,7 @@ if st.session_state.get("user_type") != "gov":
     st.write("Please log out and sign in with government credentials from the main portal.")
     st.stop()
 
-# --- NEW: Function to embed a dedicated background image for this page ---
+# --- NEW: Function to embed a dedicated background image with higher transparency ---
 def add_page_bg(image_file):
     try:
         with open(image_file, "rb") as f:
@@ -27,19 +27,20 @@ def add_page_bg(image_file):
             background-size: cover;
             background-position: center;
         }}
-        /* Style for containers to make them glass-like and readable */
+        /* --- THIS IS THE KEY CHANGE --- */
+        /* Style for containers to make them more transparent */
         [data-testid="stVerticalBlock"], [data-testid="stHorizontalBlock"] {{
-            background: rgba(10, 25, 47, 0.65);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(10, 25, 47, 0.45); /* Much more transparent */
+            backdrop-filter: blur(5px); /* Reduced blur to see image better */
+            -webkit-backdrop-filter: blur(5px);
             border-radius: 10px;
             padding: 20px;
             border: 1px solid rgba(0, 168, 232, 0.2);
             margin-bottom: 20px;
         }}
-        /* Enhance text readability with a shadow */
+        /* Enhance text readability with a stronger shadow */
         h1, h2, h3, p, .st-emotion-cache-1yy083c, .st-emotion-cache-1629p8f, .st-emotion-cache-1njjmv6, .st-emotion-cache-1r6slb0, .st-emotion-cache-1hg5474, .st-emotion-cache-1q8dd3i {{
-             text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+             text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
         }}
         </style>
         """,
