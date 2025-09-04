@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import sys
+import base64
 sys.path.append('.') # Allows importing from the root directory
 from analysis import create_html_report # Re-using the HTML report generator
 from translations import DISTRICT_MAP_EN_KN
@@ -13,6 +14,50 @@ if st.session_state.get("user_type") != "gov":
     st.error("ACCESS DENIED: This tool is available for Government Login only.")
     st.stop()
 
+# --- NEW: Function to embed a background video ---
+def add_bg_video():
+    video_path = "videos/water_bg.mp4"
+    try:
+        with open(video_path, "rb") as video_file:
+            video_bytes = video_file.read()
+        video_b64 = base64.b64encode(video_bytes).decode()
+        
+        st.markdown(f"""
+        <style>
+        [data-testid="stAppViewContainer"] > .main {{
+            background: none; /* Remove default background */
+        }}
+        .stApp {{
+            background: #0E1117; /* Fallback color */
+        }}
+        #bg-video {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -1;
+            opacity: 0.3; /* Make it subtle */
+        }}
+        /* Add some glassmorphism to the input/output containers for readability */
+        [data-testid="stVerticalBlock"] {{
+            background: rgba(10, 25, 47, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(0, 168, 232, 0.2);
+            margin-bottom: 20px;
+        }}
+        </style>
+        <video autoplay muted loop id="bg-video">
+            <source src="data:video/mp4;base64,{video_b64}" type="video/mp4">
+        </video>
+        """, unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.warning("Background video 'water_bg.mp4' not found. Please add it to the 'videos' folder.")
+
 # --- Load the Water Dataset (cached for performance) ---
 @st.cache_data
 def load_water_data():
@@ -24,23 +69,22 @@ def load_water_data():
 
 water_df = load_water_data()
 
-# --- AI Analysis Function (NOW BILINGUAL) ---
-@st.cache_data # Cache the AI response for a given district/language combination
+# --- AI Analysis Function (Bilingual) ---
+@st.cache_data
 def get_water_analysis(source_data_tuple, district_name, language='en'):
-    source_data = dict(source_data_tuple) # Convert tuple back to dict for processing
+    source_data = dict(source_data_tuple)
     try:
         api_key = st.secrets["GEMINI_API_KEY"]
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
     except Exception:
-        st.error("Failed to configure AI Model. Have you added your GEMINI_API_KEY to secrets?")
+        st.error("Failed to configure AI Model.")
         return None
 
-    # Prompt is always engineered in English for maximum accuracy
     prompt = f"""
     **Role:** You are a senior water purification engineer for the semiconductor industry.
-    **Objective:** Analyze the provided raw water source data and assess its suitability for producing Ultra-Pure Water (UPW) for a new semiconductor fab in {district_name}.
-    **UPW Requirements:** TDS < 0.001 ppm, pH = 7.0. All other impurities must be removed.
+    **Objective:** Analyze the provided raw water source data for a new fab in {district_name}.
+    **UPW Requirements:** TDS < 0.001 ppm, pH = 7.0.
     **Raw Water Source Data:**
     - Source: {source_data['source_name']} ({source_data['source_type']})
     - Distance: {source_data['distance_from_center_km']} km
@@ -50,29 +94,28 @@ def get_water_analysis(source_data_tuple, district_name, language='en'):
     - Turbidity: {source_data['turbidity_ntu']} NTU
     - Silica: {source_data['silica_mg_L']} mg/L
     **Your Task (Generate a Markdown Report):**
-    1.  **Initial Quality Assessment:** In one sentence, classify the raw water quality as 'Excellent', 'Good', 'Moderate', or 'Poor' for UPW purposes.
-    2.  **Key Challenges:** Identify the top 2-3 challenges for purification.
-    3.  **Recommended Purification Train:** Briefly list the essential technologies required.
-    4.  **Feasibility Score:** Conclude with a "Purification Feasibility Score" on a scale of 1 to 10 and a one-sentence justification.
+    1.  **Initial Quality Assessment:** Classify the raw water quality as 'Excellent', 'Good', 'Moderate', or 'Poor'.
+    2.  **Key Challenges:** Identify the top 2-3 purification challenges.
+    3.  **Recommended Purification Train:** List the essential technologies required.
+    4.  **Feasibility Score:** Conclude with a "Purification Feasibility Score" from 1 to 10 and a justification.
     """
     
     try:
-        # Step 1: Generate the expert analysis in English
         english_report = model.generate_content(prompt).text
-        
-        # Step 2: If Kannada is requested, make a second API call to translate the report
         if language == 'kn' and english_report:
-            translation_prompt = f"Translate the following technical report accurately and professionally into formal Kannada. Retain the original Markdown formatting (like **bold text**):\n\n---\n\n{english_report}"
+            translation_prompt = f"Translate the following technical report for '{district_name}' accurately into formal Kannada, retaining Markdown formatting:\n\n---\n\n{english_report}"
             kannada_report = model.generate_content(translation_prompt).text
             return kannada_report
-            
         return english_report
-
     except Exception as e:
-        st.error(f"An error occurred while communicating with the AI model: {e}")
+        st.error(f"An error occurred with the AI model: {e}")
         return None
 
 # --- Page UI ---
+
+# Call the function to set the background video at the very top
+add_bg_video()
+
 st.title("💧 AquaMetric - Water Source & Purity Analyzer")
 st.markdown("---")
 st.info("This tool analyzes the nearest major water source for a selected district and uses AI to assess the feasibility of purifying it to Ultra-Pure Water (UPW) standards required for semiconductor manufacturing.")
@@ -80,7 +123,6 @@ st.info("This tool analyzes the nearest major water source for a selected distri
 if water_df is None:
     st.error("Water source dataset not found. Please run `generate_water_data.py` first.")
 else:
-    # --- Language selection added to the page ---
     lang = st.session_state.get('lang', 'en')
     selected_lang_display = st.radio(
         label="Select Language",
@@ -89,7 +131,7 @@ else:
         horizontal=True
     )
     st.session_state['lang'] = 'en' if selected_lang_display == 'English' else 'kn'
-    lang = st.session_state['lang'] # Update lang variable
+    lang = st.session_state['lang']
 
     if lang == 'kn':
         available_districts_en = [dist for dist in sorted(water_df['district'].unique()) if dist in DISTRICT_MAP_EN_KN]
@@ -119,14 +161,11 @@ else:
             st.subheader(f"Analysis for {selected_district_display}")
             with st.spinner("AI is analyzing the water quality data..."):
                 source_info_tuple = tuple(source_info.to_dict().items())
-                # Pass the selected language to the analysis function
                 analysis_report = get_water_analysis(source_info_tuple, selected_district_display, language=lang)
 
             if analysis_report:
                 st.markdown(analysis_report)
-                
                 st.markdown("---")
-                # Pass the language to the report generator
                 html_bytes = create_html_report(analysis_report, lang, district_en)
                 if html_bytes:
                     st.download_button(
