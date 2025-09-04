@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import base64
 
 # --- Page Security ---
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
@@ -8,18 +9,52 @@ if not st.session_state.get("logged_in"):
     st.error("Please log in from the main portal to access this page.")
     st.stop() 
 
+# --- NEW: Function to embed a dedicated background image for this page ---
+def add_page_bg(image_file):
+    try:
+        with open(image_file, "rb") as f:
+            encoded_string = base64.b64encode(f.read()).decode()
+        st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url(data:image/jpeg;base64,{encoded_string});
+            background-size: cover;
+            background-position: center;
+        }}
+        /* Style for containers to make them glass-like and readable */
+        [data-testid="stVerticalBlock"], [data-testid="stHorizontalBlock"] {{
+            background: rgba(10, 25, 47, 0.45); /* Highly transparent */
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(0, 168, 232, 0.2);
+            margin-bottom: 20px;
+        }}
+        /* Enhance text readability with a stronger shadow */
+        h1, h2, h3, h4, p, .st-emotion-cache-1yy083c, .st-emotion-cache-1629p8f, .st-emotion-cache-1njjmv6, .st-emotion-cache-1r6slb0, .st-emotion-cache-1hg5474, .st-emotion-cache-1q8dd3i {{
+             text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+        )
+    except FileNotFoundError:
+        st.warning("Background image 'ism.jpg' not found. Please add it to the 'images' folder.")
+
+# --- Call the function to set the background ---
+add_page_bg("images/ism.jpg")
+
+
 # --- Page Content ---
 st.title("About the India Semiconductor Mission (ISM)")
 st.markdown("---")
 
-# --- First Video Player ---
-video_path_1 = "videos/semi.mp4"
-if os.path.exists(video_path_1):
-    st.video(video_path_1)
-else:
-    st.warning(f"Video file not found at '{video_path_1}'.")
+st.markdown("""
+The **India Semiconductor Mission (ISM)** was launched by the Government of India with a vision to build a vibrant semiconductor and display ecosystem to enable India’s emergence as a global hub for electronics manufacturing and design.
+""")
 
-# --- Expanded Content Section ---
 st.subheader("Why India is a Potential Semiconductor Manufacturing Hub")
 st.markdown("""
 India is strategically positioning itself to become a key player in the global semiconductor landscape. This ambition is not just based on policy but is supported by a unique combination of demographic, economic, and geopolitical advantages.
@@ -37,17 +72,6 @@ st.markdown("""
 
 st.markdown("---")
 
-# --- NEW: Second Video Player with Heading ---
-st.subheader("Why India...?")
-video_path_2 = "videos/indi.mp4"
-if os.path.exists(video_path_2):
-    st.video(video_path_2)
-else:
-    st.warning(f"Video file not found at '{video_path_2}'.")
-
-st.markdown("---")
-
-# --- Existing "Objectives" Section ---
 col1, col2 = st.columns([1, 2])
 
 with col1:
