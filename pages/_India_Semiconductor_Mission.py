@@ -9,7 +9,7 @@ if not st.session_state.get("logged_in"):
     st.error("Please log in from the main portal to access this page.")
     st.stop() 
 
-# --- NEW: Function to embed a dedicated background image for this page ---
+# --- Function to embed the background image ---
 def add_page_bg(image_file):
     try:
         with open(image_file, "rb") as f:
@@ -24,7 +24,7 @@ def add_page_bg(image_file):
         }}
         /* Style for containers to make them glass-like and readable */
         [data-testid="stVerticalBlock"], [data-testid="stHorizontalBlock"] {{
-            background: rgba(10, 25, 47, 0.45); /* Highly transparent */
+            background: rgba(10, 25, 47, 0.45);
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
             border-radius: 10px;
@@ -51,10 +51,14 @@ add_page_bg("images/ism.jpg")
 st.title("About the India Semiconductor Mission (ISM)")
 st.markdown("---")
 
-st.markdown("""
-The **India Semiconductor Mission (ISM)** was launched by the Government of India with a vision to build a vibrant semiconductor and display ecosystem to enable India’s emergence as a global hub for electronics manufacturing and design.
-""")
+# --- First Video Player (RESTORED) ---
+video_path_1 = "videos/semi.mp4"
+if os.path.exists(video_path_1):
+    st.video(video_path_1)
+else:
+    st.warning(f"Video file not found at '{video_path_1}'.")
 
+# --- Expanded Content Section ---
 st.subheader("Why India is a Potential Semiconductor Manufacturing Hub")
 st.markdown("""
 India is strategically positioning itself to become a key player in the global semiconductor landscape. This ambition is not just based on policy but is supported by a unique combination of demographic, economic, and geopolitical advantages.
@@ -72,6 +76,17 @@ st.markdown("""
 
 st.markdown("---")
 
+# --- Second Video Player with Heading (RESTORED) ---
+st.subheader("Why India")
+video_path_2 = "videos/indi.mp4"
+if os.path.exists(video_path_2):
+    st.video(video_path_2)
+else:
+    st.warning(f"Video file not found at '{video_path_2}'.")
+
+st.markdown("---")
+
+# --- Existing "Objectives" Section ---
 col1, col2 = st.columns([1, 2])
 
 with col1:
