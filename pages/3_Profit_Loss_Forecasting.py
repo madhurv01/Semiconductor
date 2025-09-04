@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import base64
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import load_model
 
@@ -9,10 +10,47 @@ st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
 if st.session_state.get("user_type") != "gov":
     st.error("ACCESS DENIED: This tool is available for Government Login only.")
+    st.write("Please log out and sign in with government credentials from the main portal.")
     st.stop()
 
+# --- NEW: Function to embed a dedicated background image for this page ---
+def add_page_bg(image_file):
+    try:
+        with open(image_file, "rb") as f:
+            encoded_string = base64.b64encode(f.read()).decode()
+        st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url(data:image/jpeg;base64,{encoded_string});
+            background-size: cover;
+            background-position: center;
+        }}
+        /* Style for containers to make them glass-like and readable */
+        [data-testid="stVerticalBlock"], [data-testid="stHorizontalBlock"] {{
+            background: rgba(10, 25, 47, 0.45); /* Highly transparent */
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(0, 168, 232, 0.2);
+            margin-bottom: 20px;
+        }}
+        /* Enhance text readability with a stronger shadow */
+        h1, h2, h3, h4, p, .st-emotion-cache-1yy083c, .st-emotion-cache-1629p8f, .st-emotion-cache-1njjmv6, .st-emotion-cache-1r6slb0, .st-emotion-cache-1hg5474, .st-emotion-cache-1q8dd3i {{
+             text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+        )
+    except FileNotFoundError:
+        st.warning("Background image 'prof.jpg' not found. Please add it to the 'images' folder.")
+
+# --- Call the function to set the background ---
+add_page_bg("images/prof.jpg")
+
 # --- AI Model Loading ---
-# Use caching to load the model only once
 @st.cache_resource
 def load_ai_model():
     try:
@@ -26,33 +64,23 @@ model = load_ai_model()
 
 # --- AI Forecasting Function ---
 def forecast_with_ai(df, years=5):
-    """Uses the trained LSTM model to project future values."""
-    
-    # Prepare the data and scaler (must be identical to training)
     data = df[['average_selling_price_usd', 'silicon_wafer_cost_usd', 'energy_cost_per_kwh_usd', 'total_daily_labor_cost_usd']].values
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaled_data = scaler.fit_transform(data)
     
     sequence_length = 60
-    
-    # Get the last sequence from the historical data
     last_sequence = scaled_data[-sequence_length:]
     current_batch = last_sequence.reshape(1, sequence_length, 4)
     
     future_predictions = []
     
-    # Predict for 5 years (365 * 5 days)
     for i in range(365 * years):
-        # Get the prediction for the next day
         next_prediction = model.predict(current_batch, verbose=0)
         future_predictions.append(next_prediction[0])
-        # Update the batch: remove the first day and add the new prediction
         current_batch = np.append(current_batch[:, 1:, :], [[next_prediction[0]]], axis=1)
         
-    # Inverse transform to get the actual values
     predicted_values = scaler.inverse_transform(future_predictions)
     
-    # Aggregate daily predictions into yearly averages
     yearly_forecasts = {}
     df_preds = pd.DataFrame(predicted_values, columns=['average_selling_price_usd', 'silicon_wafer_cost_usd', 'energy_cost_per_kwh_usd', 'total_daily_labor_cost_usd'])
     
@@ -63,7 +91,6 @@ def forecast_with_ai(df, years=5):
                 yearly_forecasts[col] = []
             yearly_forecasts[col].append(yearly_data[col].mean())
             
-    # Convert lists to numpy arrays
     for col in yearly_forecasts:
         yearly_forecasts[col] = np.array(yearly_forecasts[col])
         
@@ -89,7 +116,6 @@ chips_per_wafer = st.sidebar.slider("Average Chips per Wafer", 100, 1000, 400, 1
 
 if model is not None and st.sidebar.button("Run AI Forecast", type="primary", use_container_width=True):
     with st.spinner("Running AI model to generate 5-year forecast... This may take a moment."):
-        # --- Calculations ---
         years = np.arange(1, 6)
         forecasts = forecast_with_ai(df_historical)
         
@@ -106,7 +132,6 @@ if model is not None and st.sidebar.button("Run AI Forecast", type="primary", us
         annual_profit_loss = annual_revenue - annual_opex - depreciation
         cumulative_profit_loss = np.cumsum(annual_profit_loss)
 
-        # --- Display Results ---
         df_forecast = pd.DataFrame({
             "Year": years,
             "Projected Revenue (Billion USD)": annual_revenue,
@@ -136,6 +161,6 @@ if model is not None and st.sidebar.button("Run AI Forecast", type="primary", us
         st.metric("Total 5-Year Net Result (Billion USD)", f"{total_profit:.2f}")
 
 elif model is None:
-    pass # Error is already shown by the load_ai_model function
+    pass
 else:
     st.info("Adjust the assumptions in the sidebar and click 'Run AI Forecast' to generate the financial projections.")
