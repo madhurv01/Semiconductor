@@ -8,3 +8,4 @@ tensorflow-cpu
 scikit-learn
 google-api-python-client
 geopy
+deepface

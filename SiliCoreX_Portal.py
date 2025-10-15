@@ -4,6 +4,9 @@ import os
 import streamlit.components.v1 as components
 from supabase import create_client, Client
 import bcrypt
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+from deepface import DeepFace
+import numpy as np
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -27,7 +30,7 @@ def load_css(file_name):
     with open(file_name) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-# --- Function to set background image (Restored) ---
+# --- Function to set background image ---
 def set_page_background(png_file):
     try:
         with open(png_file, "rb") as f:
@@ -60,6 +63,8 @@ if 'user_type' not in st.session_state:
     st.session_state['user_type'] = None
 if 'username' not in st.session_state:
     st.session_state['username'] = None
+if 'show_cam' not in st.session_state:
+    st.session_state.show_cam = False
 
 # --- Supabase Initialization ---
 supabase = None
@@ -104,6 +109,7 @@ if st.session_state.get('logged_in'):
         st.session_state['logged_in'] = False
         st.session_state['user_type'] = None
         st.session_state['username'] = None
+        st.session_state.show_cam = False # Reset cam state on logout
         st.rerun()
 
     st.title("SiliCoreX Portal Dashboard")
@@ -134,7 +140,6 @@ if st.session_state.get('logged_in'):
     else:
         st.info("Welcome! You can explore public information about the India Semiconductor Mission and find job opportunities.")
 else:
-    # --- LOGIN PAGE LOGIC ---
     load_css("style.css")
     set_page_background('images/background.png')
 
@@ -164,7 +169,7 @@ else:
     <div class="glass-card">
         <p class="section-header">Background (Problem)</p>
         <div class="text-block">
-             The semiconductor industry faces challenges in site selection, resource management, and profitability forecasting due to complex dependencies on economic, logistical, and environmental factors. With rising demand for chips and constrained resources like pure water and raw materials, there is a critical need for data-driven tools to optimize manufacturing unit establishment and operations. The Indian government has launched ambitious initiatives under the <strong>India Semiconductor Mission (ISM)</strong> to build a self-reliant ecosystem.
+            The semiconductor industry faces challenges in site selection, resource management, and profitability forecasting due to complex dependencies on economic, logistical, and environmental factors. With rising demand for chips and constrained resources like pure water and raw materials, there is a critical need for data-driven tools to optimize manufacturing unit establishment and operations. The Indian government has launched ambitious initiatives under the <strong>India Semiconductor Mission (ISM)</strong> to build a self-reliant ecosystem.
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -174,13 +179,56 @@ else:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("gov_login_form"):
             st.markdown('<p class="login-header">Government Login</p>', unsafe_allow_html=True)
-            gov_user = st.text_input("Username", key="gov_user")
+            gov_user = st.text_input("Username", value="madhurvwork@gmail.com", key="gov_user") # Pre-fill the username
             gov_pass = st.text_input("Password", type="password", key="gov_pass")
-            if st.form_submit_button("Login", use_container_width=True):
+            if st.form_submit_button("Login with Password", use_container_width=True):
                 if perform_login(gov_user, gov_pass, "gov"):
                     st.rerun()
                 else:
                     st.error("Invalid government credentials.")
+        
+        st.markdown("<p style='text-align: center; color: white; margin-top:1rem;'>or</p>", unsafe_allow_html=True)
+        
+        if st.button("Login with Face ID", use_container_width=True, on_click=lambda: st.session_state.update(show_cam=True)):
+            pass
+
+        if st.session_state.show_cam:
+            st.info("Position your face in the frame and wait for verification.")
+            
+            class FaceVerifier(VideoTransformerBase):
+                def __init__(self):
+                    self.is_verified = False
+                    self.user_to_check = "madhurvwork@gmail.com"
+                    self.reference_image_path = f"images/{self.user_to_check}.jpg"
+
+                def transform(self, frame):
+                    if not self.is_verified:
+                        img = frame.to_ndarray(format="bgr24")
+                        try:
+                            result = DeepFace.verify(
+                                img1_path=img, 
+                                img2_path=self.reference_image_path,
+                                model_name='VGG-Face',
+                                detector_backend='opencv',
+                                enforce_detection=False
+                            )
+                            if result["verified"]:
+                                self.is_verified = True
+                                st.session_state['logged_in'] = True
+                                st.session_state['user_type'] = "gov"
+                                st.session_state['username'] = self.user_to_check
+                        except Exception:
+                            pass
+                    return frame
+
+            webrtc_ctx = webrtc_streamer(key="face_auth", video_transformer_factory=FaceVerifier, rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]})
+
+            if webrtc_ctx.video_transformer and webrtc_ctx.video_transformer.is_verified:
+                st.session_state.show_cam = False
+                st.success("Face recognized! Logging in...")
+                # Use a small delay to let the user see the message before stopping the camera
+                st.experimental_rerun()
+
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
@@ -199,7 +247,7 @@ else:
     st.markdown("""
         <div class="news-container">
             <div class="news-ticker">
-                <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong>...</p>
+                <p><strong>India's Semiconductor Sector: Three New Plants Get Approved!</strong> Tata Group and CG Power–Renesas to boost manufacturing capacity. +++ <strong>Major Leap into Manufacturing: 3 Plants, Rs 1.26 Lakh Crore Investment Gets Nod.</strong> A significant step toward becoming self-reliant. +++ <strong>Maharashtra gets a boost with new Rs 63,647 crore plant.</strong> +++</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
