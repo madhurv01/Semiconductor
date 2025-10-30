@@ -8,5 +8,7 @@ tensorflow-cpu
 scikit-learn
 google-api-python-client
 geopy
+cv2
+PIL
 deepface
 streamlit_webrtc
