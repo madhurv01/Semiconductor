@@ -1,12 +1,9 @@
 import streamlit as st
 import base64
 import os
-import streamlit.components.v1 as components
 from supabase import create_client, Client
+import streamlit.components.v1 as components
 import bcrypt
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
-from deepface import DeepFace
-import numpy as np
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -63,8 +60,6 @@ if 'user_type' not in st.session_state:
     st.session_state['user_type'] = None
 if 'username' not in st.session_state:
     st.session_state['username'] = None
-if 'show_cam' not in st.session_state:
-    st.session_state.show_cam = False
 
 # --- Supabase Initialization ---
 supabase = None
@@ -74,32 +69,30 @@ try:
 except Exception:
     pass 
 
-# --- Login Logic Function ---
-def perform_login(username, password, user_type):
+# --- REFACTORED LOGIN LOGIC ---
+def attempt_login(username, password, user_type):
     if user_type == "gov":
         if username in AUTHORIZED_GOV_USERS and password == "password":
             st.session_state['logged_in'] = True
             st.session_state['user_type'] = "gov"
             st.session_state['username'] = username
             return True
-        else:
-            return False
+        return False
+    
     elif user_type == "user":
         if not (username and password):
-             st.warning("Please enter both username and password.")
-             return False
+            st.warning("Please enter both username and password.")
+            return False
         if not supabase:
-            st.error("Database is not connected. Cannot log in.")
+            st.error("Database connection failed. Cannot log in.")
             return False
         
         res = supabase.table('user_logins').select('username, hashed_password').eq('username', username).execute()
-        if res.data:
-            user_data = res.data[0]
-            if verify_password(password, user_data['hashed_password']):
-                st.session_state['logged_in'] = True
-                st.session_state['user_type'] = "user"
-                st.session_state['username'] = username
-                return True
+        if res.data and verify_password(password, res.data[0]['hashed_password']):
+            st.session_state['logged_in'] = True
+            st.session_state['user_type'] = "user"
+            st.session_state['username'] = username
+            return True
         return False
 
 # --- Main Page Rendering ---
@@ -109,7 +102,6 @@ if st.session_state.get('logged_in'):
         st.session_state['logged_in'] = False
         st.session_state['user_type'] = None
         st.session_state['username'] = None
-        st.session_state.show_cam = False # Reset cam state on logout
         st.rerun()
 
     st.title("SiliCoreX Portal Dashboard")
@@ -179,56 +171,13 @@ else:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("gov_login_form"):
             st.markdown('<p class="login-header">Government Login</p>', unsafe_allow_html=True)
-            gov_user = st.text_input("Username", value="madhurvwork@gmail.com", key="gov_user") # Pre-fill the username
+            gov_user = st.text_input("Username", key="gov_user")
             gov_pass = st.text_input("Password", type="password", key="gov_pass")
-            if st.form_submit_button("Login with Password", use_container_width=True):
-                if perform_login(gov_user, gov_pass, "gov"):
+            if st.form_submit_button("Login", use_container_width=True):
+                if attempt_login(gov_user, gov_pass, "gov"):
                     st.rerun()
                 else:
                     st.error("Invalid government credentials.")
-        
-        st.markdown("<p style='text-align: center; color: white; margin-top:1rem;'>or</p>", unsafe_allow_html=True)
-        
-        if st.button("Login with Face ID", use_container_width=True, on_click=lambda: st.session_state.update(show_cam=True)):
-            pass
-
-        if st.session_state.show_cam:
-            st.info("Position your face in the frame and wait for verification.")
-            
-            class FaceVerifier(VideoTransformerBase):
-                def __init__(self):
-                    self.is_verified = False
-                    self.user_to_check = "madhurvwork@gmail.com"
-                    self.reference_image_path = f"images/{self.user_to_check}.jpg"
-
-                def transform(self, frame):
-                    if not self.is_verified:
-                        img = frame.to_ndarray(format="bgr24")
-                        try:
-                            result = DeepFace.verify(
-                                img1_path=img, 
-                                img2_path=self.reference_image_path,
-                                model_name='VGG-Face',
-                                detector_backend='opencv',
-                                enforce_detection=False
-                            )
-                            if result["verified"]:
-                                self.is_verified = True
-                                st.session_state['logged_in'] = True
-                                st.session_state['user_type'] = "gov"
-                                st.session_state['username'] = self.user_to_check
-                        except Exception:
-                            pass
-                    return frame
-
-            webrtc_ctx = webrtc_streamer(key="face_auth", video_transformer_factory=FaceVerifier, rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]})
-
-            if webrtc_ctx.video_transformer and webrtc_ctx.video_transformer.is_verified:
-                st.session_state.show_cam = False
-                st.success("Face recognized! Logging in...")
-                # Use a small delay to let the user see the message before stopping the camera
-                st.experimental_rerun()
-
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
@@ -238,10 +187,11 @@ else:
             user_login_user = st.text_input("Username", key="user_login_user")
             user_login_pass = st.text_input("Password", type="password", key="user_login_pass")
             if st.form_submit_button("Login", use_container_width=True):
-                if perform_login(user_login_user, user_login_pass, "user"):
-                    st.rerun()
+                if not attempt_login(user_login_user, user_login_pass, "user"):
+                    # Error is handled inside the function, just need to prevent rerun on failure
+                    pass
                 else:
-                    st.error("Incorrect username or password.")
+                    st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
